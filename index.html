@@ -1,77 +1,182 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Macky Golf System</title>
-    <style>
-        body { margin: 0; padding: 0; background-color: #0d0d0d; color: white; font-family: 'Arial', sans-serif; overflow: hidden; }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <style>
+    /* 全体ガード */
+    * { touch-action: none; user-select: none; -webkit-user-select: none; }
+    input, select, #total-val { touch-action: auto !important; user-select: auto !important; -webkit-user-select: auto !important; }
 
-        /* ⚙️アイコン：右端固定 */
-        .settings-icon {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            font-size: 32px;
-            cursor: pointer;
-            z-index: 1000;
-        }
+    body, html {
+      margin: 0; padding: 0; width: 100%; height: 100%;
+      background-color: #000; color: white;
+      font-family: 'Arial', sans-serif; overflow: hidden;
+    }
 
-        .app-container { display: flex; flex-direction: column; align-items: center; justify-content: space-around; height: 100vh; padding: 20px 0; }
+    .cockpit {
+      position: relative; width: 100vw; height: 100vh;
+      background: radial-gradient(circle, #1a1a1a 60%, #333 95%, #000 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: space-around;
+      padding: 5% 10%; box-sizing: border-box;
+    }
 
-        /* TOTAL YARDS 表示 */
-        .total-yards .label { font-size: 14px; color: #888; text-align: center; }
-        .total-yards .value { font-size: 50px; font-weight: bold; color: #00ff00; text-align: center; }
+    .label { font-size: 11px; color: #888; letter-spacing: 2px; }
+    #remaining { font-size: 80px; font-weight: bold; color: #ff4444; line-height: 1; }
+    #total-val { font-size: 26px; color: #28a745; border-bottom: 2px dashed #28a745; cursor: pointer; }
+    #drive { font-size: 38px; font-weight: bold; color: #fff; }
 
-        /* メインの緑円（クラブ表示） */
-        .club-circle {
-            width: 220px;
-            height: 220px;
-            border-radius: 50%;
-            background: radial-gradient(circle, #28a745, #155724);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 30px rgba(40, 167, 69, 0.4);
-            border: 4px solid #2ecc71;
-        }
+    .btn-row { display: flex; align-items: center; gap: 20px; width: 100%; justify-content: center; }
+    
+    /* 🏌️‍♂️ 修正点１：クラブ名（7iなど）の文字を大きくしました */
+    #shot-btn {
+      width: 140px; height: 140px; border-radius: 50%; /* 少しボタンも大きく */
+      background: #28a745; color: white; border: none;
+      font-size: 35px; font-weight: 900; box-shadow: 0 6px #155724; /* 文字サイズ 16px -> 35px */
+    }
+    #shot-btn.measuring { background: #ff8c00; box-shadow: 0 0 20px #ff8c00; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.95); } }
 
-        /* 🏌️‍♂️ ここが重要！適正クラブ（7Iなど）の文字を大きくしました */
-        #suggested-club {
-            font-size: 80px; /* 前よりかなり大きくしました */
-            font-weight: 900;
-            color: white;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
-        }
+    .reset-btn { width: 55px; height: 55px; border-radius: 50%; background: #444; color: #fff; border: none; font-size: 10px; }
+    .spacer { width: 55px; }
 
-        /* 下部のDRIVE表示 */
-        .drive-display .label { font-size: 14px; color: #888; text-align: center; }
-        .drive-display .value { font-size: 90px; font-weight: bold; color: white; text-align: center; }
-    </style>
+    /* 🛠️ 修正点２：⚙️アイコンを右端へ移動 */
+    .settings-icon { position: absolute; right: 20px; top: 20px; font-size: 32px; z-index: 10; cursor: pointer; }
+
+    /* 設定画面 */
+    #settings-panel {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; z-index: 100;
+    }
+    .settings-header { color: #28a745; margin: 20px 0 10px; font-size: 20px; }
+    .club-list { overflow-y: auto; flex: 1; width: 90%; padding: 10px; }
+    .club-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: #222; padding: 5px 10px; border-radius: 8px; }
+    select.club-sel { background: #333; color: #fff; border: 1px solid #555; padding: 5px; border-radius: 4px; width: 70px; font-size: 16px; }
+    input.club-dist { background: #000; color: #28a745; border: 1px solid #444; padding: 5px; width: 60px; text-align: center; border-radius: 4px; font-size: 16px; font-weight: bold; }
+    .close-btn { margin: 15px 0 25px; padding: 12px 30px; background: #28a745; border: none; color: white; border-radius: 25px; font-weight: bold; }
+  </style>
 </head>
 <body>
 
-    <div class="settings-icon">⚙️</div>
+<div class="cockpit">
+  <div style="text-align:center">
+    <div class="label">TOTAL YARDS</div>
+    <div id="total-val" onclick="askTotal()">400</div>
+  </div>
+  <div id="remaining">---</div>
+  <div class="btn-row">
+    <button class="reset-btn" onclick="resetAll()">RESET</button>
+    <button id="shot-btn" onclick="startShot()">SHOT A</button>
+    <div class="spacer"></div>
+  </div>
+  <div style="text-align:center">
+    <div class="label">DRIVE</div>
+    <div id="drive">000</div>
+  </div>
+  <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
+</div>
 
-    <div class="app-container">
-        <div class="total-yards">
-            <div class="label">REMAINING</div>
-            <div class="value" id="dist">155</div>
-        </div>
+<div id="settings-panel">
+  <div class="settings-header">MY 14 CLUBS</div>
+  <div class="club-list" id="club-container"></div>
+  <button class="close-btn" onclick="toggleSettings()">SETTING OK!</button>
+</div>
 
-        <div class="club-circle">
-            <div id="suggested-club">7I</div>
-        </div>
+<script>
+let startPos = null, watchId = null, totalDist = 400;
 
-        <div class="drive-display">
-            <div class="label">DRIVE</div>
-            <div class="value">245</div>
-        </div>
-    </div>
+const clubOptions = ["---", "1W", "3W", "5W", "7W", "9W", "2U", "3U", "4U", "5U", "6U", "3i", "4i", "5i", "6i", "7i", "8i", "9i", "PW", "AW", "GW", "SW", "LW", "PT"];
+let myClubs = [
+  {name: "1W", dist: 230}, {name: "5W", dist: 190}, {name: "5U", dist: 170},
+  {name: "7i", dist: 150}, {name: "8i", dist: 140}, {name: "9i", dist: 130},
+  {name: "PW", dist: 115}, {name: "AW", dist: 95}, {name: "SW", dist: 75},
+  {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}
+];
 
-    <script>
-        // ここにMackyさんの「素晴らしい奴」の計算ロジックが入るイメージです
-        // 今回は見た目の修正のみを全貼り用として出しています
-    </script>
+const container = document.getElementById('club-container');
+myClubs.forEach((club, index) => {
+  const row = document.createElement('div');
+  row.className = 'club-row';
+  let optionsHtml = clubOptions.map(opt => `<option value="${opt}" ${opt === club.name ? 'selected' : ''}>${opt}</option>`).join('');
+  row.innerHTML = `
+    <span style="color:#888; font-size:12px;">${index + 1}</span>
+    <select class="club-sel" onchange="updateClubData(${index}, 'name', this.value)">${optionsHtml}</select>
+    <input type="number" class="club-dist" value="${club.dist}" onchange="updateClubData(${index}, 'dist', this.value)">
+    <span style="color:#888;">yds</span>
+  `;
+  container.appendChild(row);
+});
+
+function updateClubData(index, key, value) {
+  if(key === 'dist') value = parseInt(value) || 0;
+  myClubs[index][key] = value;
+}
+
+function askTotal() {
+  const newDist = prompt("トータルヤードを入力してください", totalDist);
+  if (newDist) {
+    totalDist = parseInt(newDist);
+    document.getElementById('total-val').innerText = totalDist;
+    document.getElementById('remaining').innerText = totalDist;
+  }
+}
+
+function toggleSettings() {
+  const panel = document.getElementById('settings-panel');
+  panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
+}
+
+function calc(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function update(pos) {
+  if (!startPos) return;
+  const d = calc(startPos.latitude, startPos.longitude, pos.coords.latitude, pos.coords.longitude);
+  const yards = Math.floor(d * 1.09361);
+  const remaining = Math.max(0, totalDist - yards);
+
+  document.getElementById('drive').innerText = yards.toString().padStart(3, '0');
+  document.getElementById('remaining').innerText = remaining;
+
+  let bestClub = "SHOT A";
+  let minDiff = Infinity;
+
+  myClubs.forEach(club => {
+    if (club.name !== "---" && club.dist > 0) {
+      if (remaining <= club.dist) {
+        bestClub = club.name;
+      }
+    }
+  });
+  document.getElementById('shot-btn').innerText = bestClub;
+}
+
+function startShot() {
+  if (navigator.vibrate) navigator.vibrate(50);
+  document.getElementById('remaining').innerText = totalDist;
+  document.getElementById('drive').innerText = "000";
+  document.getElementById('shot-btn').classList.add('measuring');
+  if (watchId) navigator.geolocation.clearWatch(watchId);
+  navigator.geolocation.getCurrentPosition(pos => {
+    startPos = pos.coords;
+    watchId = navigator.geolocation.watchPosition(update, null, {enableHighAccuracy:true});
+  }, null, {enableHighAccuracy:true});
+}
+
+function resetAll() {
+  if (navigator.vibrate) navigator.vibrate([30, 30]);
+  if (watchId) navigator.geolocation.clearWatch(watchId);
+  startPos = null;
+  document.getElementById('shot-btn').classList.remove('measuring');
+  document.getElementById('shot-btn').innerText = "SHOT A";
+  document.getElementById('drive').innerText = "000";
+  document.getElementById('remaining').innerText = "---";
+}
+</script>
 </body>
 </html>
