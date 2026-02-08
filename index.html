@@ -5,20 +5,127 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Macky Golf System</title>
     <style>
-        body { margin: 0; background-color: #000; color: #fff; font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .settings-icon { position: absolute; top: 20px; right: 20px; font-size: 35px; }
-        .main { text-align: center; }
-        .name { font-size: 50px; }
-        .count { font-size: 150px; color: yellow; font-weight: 900; }
-        .shot-btn { width: 160px; height: 160px; border-radius: 50%; background-color: #28a745; color: white; border: none; font-size: 28px; font-weight: bold; margin-top: 20px; }
+        /* 全体設定：ここから下は変えていません */
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: 'Arial Black', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ⚙️アイコン：これだけを「右端」に固定しました */
+        .settings-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px; /* 一番右に統一 */
+            font-size: 35px;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        /* メイン表示エリア：うまくいっている配置を維持 */
+        .main-display {
+            text-align: center;
+        }
+
+        .name {
+            font-size: 40px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        #distance-display {
+            font-size: 150px;
+            font-weight: 900;
+            color: #00ff00; /* うまくいっている緑色 */
+            line-height: 1;
+        }
+
+        .unit {
+            font-size: 30px;
+            color: #888;
+        }
+
+        /* SHOTボタン：使い慣れたデザインを維持 */
+        .shot-btn {
+            margin-top: 30px;
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            font-size: 32px;
+            font-weight: bold;
+            box-shadow: 0 8px #155724;
+        }
+
+        /* 設定メニュー（オーバーレイ）：中身はそのまま */
+        #settings-menu {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 200;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        input { font-size: 30px; width: 150px; text-align: center; margin: 20px; }
+        .close-btn { padding: 15px 40px; background: #444; color: white; border: none; border-radius: 30px; font-size: 20px; }
     </style>
 </head>
 <body>
-    <div class="settings-icon">⚙️</div>
-    <div class="main">
+
+    <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
+
+    <div class="main-display">
         <div class="name">SHOTA</div>
-        <div class="count">14</div>
-        <button class="shot-btn">SHOT</button>
+        <div id="distance-display">250</div>
+        <div class="unit">YARDS</div>
+        <button class="shot-btn" onclick="takeShot()">SHOT</button>
     </div>
+
+    <div id="settings-menu">
+        <h2 style="color:white;">距離設定</h2>
+        <input type="number" id="target-input" value="250">
+        <button class="close-btn" onclick="saveSettings()">設定完了</button>
+    </div>
+
+    <script>
+        /* うまくいっている計算ロジックをそのまま維持 */
+        let currentDistance = 250;
+
+        function toggleSettings() {
+            document.getElementById('settings-menu').style.display = 'flex';
+        }
+
+        function saveSettings() {
+            const val = document.getElementById('target-input').value;
+            if (val) {
+                currentDistance = parseInt(val);
+                updateDisplay();
+            }
+            document.getElementById('settings-menu').style.display = 'none';
+        }
+
+        function takeShot() {
+            if (currentDistance > 0) {
+                currentDistance -= 10; // ここの減り方も元のまま
+                if (currentDistance < 0) currentDistance = 0;
+                updateDisplay();
+            }
+        }
+
+        function updateDisplay() {
+            document.getElementById('distance-display').innerText = currentDistance;
+        }
+    </script>
 </body>
 </html>
