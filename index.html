@@ -154,6 +154,14 @@ function update(pos) {
     }
   });
   document.getElementById('shot-btn').innerText = bestClub;
+  document.getElementById('shot-btn').innerText = bestClub;
+
+  // ここを追加！
+  if (bestClub === "SHOT A") {
+    document.getElementById('shot-btn').style.fontSize = "20px"; // SHOT Aは控えめ
+  } else {
+    document.getElementById('shot-btn').style.fontSize = "60px"; // クラブ名はドカンと！
+  }
 }
 
 function startShot() {
@@ -174,9 +182,9 @@ function resetAll() {
   startPos = null;
   document.getElementById('shot-btn').classList.remove('measuring');
   document.getElementById('shot-btn').innerText = "SHOT A";
+  document.getElementById('shot-btn').style.fontSize = "20px"; // ここを追加！
   document.getElementById('drive').innerText = "000";
   document.getElementById('remaining').innerText = "---";
-}
-</script>
+}</script>
 </body>
 </html>
