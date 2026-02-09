@@ -23,8 +23,8 @@
       background: radial-gradient(circle, #1a1a1a 60%, #333 95%, #000 100%);
       display: flex; flex-direction: column; align-items: center; 
       justify-content: center; 
-      gap: 20px; /* 要素の間隔を少し詰めて調整 */
-      padding: 0 10% 40px 10%; /* 下の余白を少し削って、全体をVer1.0.4より少し下げた */
+      gap: 20px;
+      padding: 0 10% 20px 10%; /* 全体の下余白を微調整 */
       box-sizing: border-box;
     }
 
@@ -46,7 +46,6 @@
     .reset-btn { width: 55px; height: 55px; border-radius: 50%; background: #444; color: #fff; border: none; font-size: 10px; }
     .spacer { width: 55px; }
 
-    /* ⚙️アイコンは右端 */
     .settings-icon { position: absolute; right: 20px; top: 20px; font-size: 32px; z-index: 10; cursor: pointer; }
 
     #settings-panel {
@@ -66,8 +65,8 @@
     input.club-dist { background: #000; color: #28a745; border: 1px solid #444; padding: 10px; width: 70px; text-align: center; border-radius: 4px; font-size: 16px; font-weight: bold; }
     .close-btn { margin: 15px 0 25px; padding: 12px 30px; background: #28a745; border: none; color: white; border-radius: 25px; font-weight: bold; }
 
-    /* 🛠️ バージョン：右下に戻して色を明るく(#888) */
-    .version-tag { position: absolute; bottom: 15px; right: 15px; font-size: 10px; color: #888; pointer-events: none; }
+    /* 🛠️ バージョン：さらに上に持ち上げ(30px)て、色もさらに明るく(#aaa) */
+    .version-tag { position: absolute; bottom: 30px; right: 20px; font-size: 10px; color: #aaa; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -92,7 +91,7 @@
   </div>
 
   <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
-  <div class="version-tag">Ver 1.0.5 - Macky Edition</div>
+  <div class="version-tag">Ver 1.0.6 - Macky Edition</div>
 </div>
 
 <div id="settings-panel">
