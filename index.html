@@ -22,18 +22,18 @@
       position: relative; width: 100vw; height: 100vh;
       background: radial-gradient(circle, #1a1a1a 60%, #333 95%, #000 100%);
       display: flex; flex-direction: column; align-items: center; 
-      justify-content: center; /* ← 真ん中に寄せる */
-      gap: 30px; /* 各要素の間隔 */
-      padding: 0 10% 80px 10%; /* ← 下側に80pxの大きな余白を確保！ */
+      justify-content: center; 
+      gap: 20px; /* 要素の間隔を少し詰めて調整 */
+      padding: 0 10% 40px 10%; /* 下の余白を少し削って、全体をVer1.0.4より少し下げた */
       box-sizing: border-box;
     }
 
     .label { font-size: 11px; color: #888; letter-spacing: 2px; }
     #remaining { font-size: 80px; font-weight: bold; color: #ff4444; line-height: 1; }
-    #total-val { font-size: 26px; color: #28a745; border-bottom: 2px dashed #28a745; cursor: pointer; margin-bottom: 10px; }
+    #total-val { font-size: 26px; color: #28a745; border-bottom: 2px dashed #28a745; cursor: pointer; margin-bottom: 5px; }
     #drive { font-size: 38px; font-weight: bold; color: #fff; }
 
-    .btn-row { display: flex; align-items: center; gap: 20px; width: 100%; justify-content: center; margin: 10px 0; }
+    .btn-row { display: flex; align-items: center; gap: 20px; width: 100%; justify-content: center; margin: 5px 0; }
     
     #shot-btn {
       width: 140px; height: 140px; border-radius: 50%;
@@ -46,6 +46,7 @@
     .reset-btn { width: 55px; height: 55px; border-radius: 50%; background: #444; color: #fff; border: none; font-size: 10px; }
     .spacer { width: 55px; }
 
+    /* ⚙️アイコンは右端 */
     .settings-icon { position: absolute; right: 20px; top: 20px; font-size: 32px; z-index: 10; cursor: pointer; }
 
     #settings-panel {
@@ -65,8 +66,8 @@
     input.club-dist { background: #000; color: #28a745; border: 1px solid #444; padding: 10px; width: 70px; text-align: center; border-radius: 4px; font-size: 16px; font-weight: bold; }
     .close-btn { margin: 15px 0 25px; padding: 12px 30px; background: #28a745; border: none; color: white; border-radius: 25px; font-weight: bold; }
 
-    /* バージョン表記用：DRIVEのすぐ下に固定 */
-    .version-tag { margin-top: 5px; font-size: 10px; color: #444; pointer-events: none; }
+    /* 🛠️ バージョン：右下に戻して色を明るく(#888) */
+    .version-tag { position: absolute; bottom: 15px; right: 15px; font-size: 10px; color: #888; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -88,10 +89,10 @@
   <div style="text-align:center">
     <div class="label">DRIVE</div>
     <div id="drive">000</div>
-    <div class="version-tag">Ver 1.0.4 - Macky Edition</div>
   </div>
 
   <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
+  <div class="version-tag">Ver 1.0.5 - Macky Edition</div>
 </div>
 
 <div id="settings-panel">
@@ -101,7 +102,7 @@
 </div>
 
 <script>
-/* JS部分は変更なし */
+/* JS部分は共通 */
 let startPos = null, watchId = null, totalDist = 400;
 const clubOptions = ["---", "1W", "3W", "5W", "7W", "9W", "2U", "3U", "4U", "5U", "6U", "3i", "4i", "5i", "6i", "7i", "8i", "9i", "PW", "AW", "GW", "SW", "LW", "PT"];
 let myClubs = [
