@@ -4,9 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
-    /* 全体ガード */
+    /* 全体ガード＋入力許可 */
     * { touch-action: none; user-select: none; -webkit-user-select: none; }
-    input, select, #total-val { touch-action: auto !important; user-select: auto !important; -webkit-user-select: auto !important; }
+    input, select, #total-val, #settings-panel, .club-list, .club-row { 
+      touch-action: auto !important; 
+      user-select: auto !important; 
+      -webkit-user-select: auto !important; 
+    }
 
     body, html {
       margin: 0; padding: 0; width: 100%; height: 100%;
@@ -28,11 +32,10 @@
 
     .btn-row { display: flex; align-items: center; gap: 20px; width: 100%; justify-content: center; }
     
-    /* 🏌️‍♂️ 修正点１：クラブ名（7iなど）の文字を大きくしました */
     #shot-btn {
-      width: 140px; height: 140px; border-radius: 50%; /* 少しボタンも大きく */
+      width: 140px; height: 140px; border-radius: 50%;
       background: #28a745; color: white; border: none;
-      font-size: 35px; font-weight: 900; box-shadow: 0 6px #155724; /* 文字サイズ 16px -> 35px */
+      font-size: 35px; font-weight: 900; box-shadow: 0 6px #155724;
     }
     #shot-btn.measuring { background: #ff8c00; box-shadow: 0 0 20px #ff8c00; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.95); } }
@@ -40,7 +43,7 @@
     .reset-btn { width: 55px; height: 55px; border-radius: 50%; background: #444; color: #fff; border: none; font-size: 10px; }
     .spacer { width: 55px; }
 
-    /* 🛠️ 修正点２：⚙️アイコンを右端へ移動 */
+    /* ⚙️アイコンは右端 */
     .settings-icon { position: absolute; right: 20px; top: 20px; font-size: 32px; z-index: 10; cursor: pointer; }
 
     /* 設定画面 */
@@ -49,10 +52,17 @@
       background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; z-index: 100;
     }
     .settings-header { color: #28a745; margin: 20px 0 10px; font-size: 20px; }
-    .club-list { overflow-y: auto; flex: 1; width: 90%; padding: 10px; }
+    
+    /* 🛠️ スクロール可能に修正 */
+    .club-list { 
+      overflow-y: auto !important; 
+      flex: 1; width: 90%; padding: 10px; 
+      touch-action: pan-y !important; 
+      -webkit-overflow-scrolling: touch;
+    }
     .club-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: #222; padding: 5px 10px; border-radius: 8px; }
-    select.club-sel { background: #333; color: #fff; border: 1px solid #555; padding: 5px; border-radius: 4px; width: 70px; font-size: 16px; }
-    input.club-dist { background: #000; color: #28a745; border: 1px solid #444; padding: 5px; width: 60px; text-align: center; border-radius: 4px; font-size: 16px; font-weight: bold; }
+    select.club-sel { background: #333; color: #fff; border: 1px solid #555; padding: 10px; border-radius: 4px; width: 80px; font-size: 16px; }
+    input.club-dist { background: #000; color: #28a745; border: 1px solid #444; padding: 10px; width: 70px; text-align: center; border-radius: 4px; font-size: 16px; font-weight: bold; }
     .close-btn { margin: 15px 0 25px; padding: 12px 30px; background: #28a745; border: none; color: white; border-radius: 25px; font-weight: bold; }
   </style>
 </head>
@@ -144,8 +154,6 @@ function update(pos) {
   document.getElementById('remaining').innerText = remaining;
 
   let bestClub = "SHOT A";
-  let minDiff = Infinity;
-
   myClubs.forEach(club => {
     if (club.name !== "---" && club.dist > 0) {
       if (remaining <= club.dist) {
@@ -154,13 +162,11 @@ function update(pos) {
     }
   });
   document.getElementById('shot-btn').innerText = bestClub;
-  document.getElementById('shot-btn').innerText = bestClub;
 
-  // ここを追加！
   if (bestClub === "SHOT A") {
-    document.getElementById('shot-btn').style.fontSize = "20px"; // SHOT Aは控えめ
+    document.getElementById('shot-btn').style.fontSize = "20px";
   } else {
-    document.getElementById('shot-btn').style.fontSize = "60px"; // クラブ名はドカンと！
+    document.getElementById('shot-btn').style.fontSize = "60px";
   }
 }
 
@@ -182,9 +188,10 @@ function resetAll() {
   startPos = null;
   document.getElementById('shot-btn').classList.remove('measuring');
   document.getElementById('shot-btn').innerText = "SHOT A";
-  document.getElementById('shot-btn').style.fontSize = "20px"; // ここを追加！
+  document.getElementById('shot-btn').style.fontSize = "20px";
   document.getElementById('drive').innerText = "000";
   document.getElementById('remaining').innerText = "---";
-}</script>
+}
+</script>
 </body>
 </html>
