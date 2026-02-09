@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
-    /* 全体ガード＋入力許可 */
+    /* 全体ガード */
     * { touch-action: none; user-select: none; -webkit-user-select: none; }
-    input, select, #total-val, #settings-panel, .club-list, .club-row { 
+    input, select, #total-val, #settings-panel, #hole-panel, .list-container, .club-row, .hole-item { 
       touch-action: auto !important; 
       user-select: auto !important; 
       -webkit-user-select: auto !important; 
@@ -23,7 +23,7 @@
       background: radial-gradient(circle, #1a1a1a 60%, #333 95%, #000 100%);
       display: flex; flex-direction: column; align-items: center; 
       justify-content: center; 
-      gap: 25px;
+      gap: 20px;
       padding: 0 10% 40px 10%;
       box-sizing: border-box;
     }
@@ -31,11 +31,7 @@
     .label { font-size: 11px; color: #888; letter-spacing: 2px; }
     #remaining { font-size: 80px; font-weight: bold; color: #ff4444; line-height: 1; }
     #total-val { font-size: 26px; color: #28a745; border-bottom: 2px dashed #28a745; cursor: pointer; margin-bottom: 5px; }
-    #drive { font-size: 38px; font-weight: bold; color: #fff; }
     
-    /* バージョン表記をDRIVEの横に添える設定 */
-    .version-info { font-size: 10px; color: #666; margin-left: 8px; vertical-align: bottom; }
-
     .btn-row { display: flex; align-items: center; gap: 20px; width: 100%; justify-content: center; margin: 5px 0; }
     
     #shot-btn {
@@ -46,27 +42,34 @@
     #shot-btn.measuring { background: #ff8c00; box-shadow: 0 0 20px #ff8c00; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.95); } }
 
-    .reset-btn { width: 55px; height: 55px; border-radius: 50%; background: #444; color: #fff; border: none; font-size: 10px; }
-    .spacer { width: 55px; }
+    .side-btn { width: 55px; height: 55px; border-radius: 50%; background: #444; color: #fff; border: none; font-size: 10px; font-weight: bold; }
+
+    #drive { font-size: 38px; font-weight: bold; color: #fff; }
+    .version-info { font-size: 10px; color: #666; margin-left: 8px; vertical-align: bottom; }
 
     .settings-icon { position: absolute; right: 20px; top: 20px; font-size: 32px; z-index: 10; cursor: pointer; }
 
-    #settings-panel {
+    /* パネル共通設定 */
+    .modal-panel {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; z-index: 100;
     }
-    .settings-header { color: #28a745; margin: 20px 0 10px; font-size: 20px; }
-    
-    .club-list { 
-      overflow-y: auto !important; 
-      flex: 1; width: 90%; padding: 10px; 
-      touch-action: pan-y !important; 
-      -webkit-overflow-scrolling: touch;
+    .panel-header { color: #28a745; margin: 20px 0 10px; font-size: 20px; font-weight: bold; }
+    .list-container { flex: 1; width: 90%; overflow-y: auto !important; padding: 10px; }
+    .close-btn { margin: 15px 0 25px; padding: 12px 30px; background: #28a745; border: none; color: white; border-radius: 25px; font-weight: bold; }
+
+    /* ホールリスト用スタイル */
+    .hole-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 15px; background: #222; margin-bottom: 8px; border-radius: 8px; font-size: 18px;
     }
+    .hole-item:active { background: #333; }
+    .hole-num { color: #888; }
+    .hole-dist { color: #28a745; font-weight: bold; }
+
     .club-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: #222; padding: 5px 10px; border-radius: 8px; }
     select.club-sel { background: #333; color: #fff; border: 1px solid #555; padding: 10px; border-radius: 4px; width: 80px; font-size: 16px; }
     input.club-dist { background: #000; color: #28a745; border: 1px solid #444; padding: 10px; width: 70px; text-align: center; border-radius: 4px; font-size: 16px; font-weight: bold; }
-    .close-btn { margin: 15px 0 25px; padding: 12px 30px; background: #28a745; border: none; color: white; border-radius: 25px; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -74,36 +77,72 @@
 <div class="cockpit">
   <div style="text-align:center">
     <div class="label">TOTAL YARDS</div>
-    <div id="total-val" onclick="askTotal()">400</div>
+    <div id="total-val" onclick="askTotal()">---</div>
   </div>
   
   <div id="remaining">---</div>
   
   <div class="btn-row">
-    <button class="reset-btn" onclick="resetAll()">RESET</button>
+    <button class="side-btn" onclick="resetAll()">RESET</button>
     <button id="shot-btn" onclick="startShot()">SHOT A</button>
-    <div class="spacer"></div>
+    <button class="side-btn" onclick="toggleHolePanel()" style="background:#28a745;">HOLE</button>
   </div>
   
   <div style="text-align:center">
     <div class="label">DRIVE</div>
     <div>
-      <span id="drive">000</span><span class="version-info">v1.0.7</span>
+      <span id="drive">000</span><span class="version-info">v1.0.8</span>
     </div>
   </div>
 
   <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
 </div>
 
-<div id="settings-panel">
-  <div class="settings-header">MY 14 CLUBS</div>
-  <div class="club-list" id="club-container"></div>
+<div id="hole-panel" class="modal-panel">
+  <div class="panel-header">残波GC HOLE SELECT</div>
+  <div class="list-container" id="hole-list"></div>
+  <button class="close-btn" onclick="toggleHolePanel()">CLOSE</button>
+</div>
+
+<div id="settings-panel" class="modal-panel">
+  <div class="panel-header">MY 14 CLUBS</div>
+  <div class="list-container" id="club-container"></div>
   <button class="close-btn" onclick="toggleSettings()">SETTING OK!</button>
 </div>
 
 <script>
-/* JS部分は変更なし */
-let startPos = null, watchId = null, totalDist = 400;
+let startPos = null, watchId = null, totalDist = 0;
+
+// 残波ゴルフクラブのデータ (仮の代表値を含みます。当日はスコアカードで微調整してください)
+const zanpaHoles = [
+  {h:1, p:3, d:145}, {h:2, p:3, d:163}, {h:3, p:3, d:150}, {h:4, p:3, d:150}, {h:5, p:3, d:138}, {h:6, p:3, d:167},
+  {h:7, p:4, d:280}, {h:8, p:3, d:145}, {h:9, p:3, d:162},
+  {h:10, p:3, d:135}, {h:11, p:3, d:170}, {h:12, p:3, d:155}, {h:13, p:4, d:310}, {h:14, p:3, d:150}, {h:15, p:4, d:285},
+  {h:16, p:3, d:178}, {h:17, p:4, d:350}, {h:18, p:3, d:150}
+];
+
+const holeList = document.getElementById('hole-list');
+zanpaHoles.forEach(hole => {
+  const item = document.createElement('div');
+  item.className = 'hole-item';
+  item.innerHTML = `<span class="hole-num">${hole.h}H (Par ${hole.p})</span><span class="hole-dist">${hole.d} <small>yds</small></span>`;
+  item.onclick = () => selectHole(hole.d);
+  holeList.appendChild(item);
+});
+
+function selectHole(d) {
+  totalDist = d;
+  document.getElementById('total-val').innerText = totalDist;
+  document.getElementById('remaining').innerText = totalDist;
+  toggleHolePanel();
+}
+
+function toggleHolePanel() {
+  const p = document.getElementById('hole-panel');
+  p.style.display = (p.style.display === 'flex') ? 'none' : 'flex';
+}
+
+// 以下、以前と同様のクラブ機能
 const clubOptions = ["---", "1W", "3W", "5W", "7W", "9W", "2U", "3U", "4U", "5U", "6U", "3i", "4i", "5i", "6i", "7i", "8i", "9i", "PW", "AW", "GW", "SW", "LW", "PT"];
 let myClubs = [
   {name: "1W", dist: 230}, {name: "5W", dist: 190}, {name: "5U", dist: 170},
@@ -116,30 +155,12 @@ myClubs.forEach((club, index) => {
   const row = document.createElement('div');
   row.className = 'club-row';
   let optionsHtml = clubOptions.map(opt => `<option value="${opt}" ${opt === club.name ? 'selected' : ''}>${opt}</option>`).join('');
-  row.innerHTML = `
-    <span style="color:#888; font-size:12px;">${index + 1}</span>
-    <select class="club-sel" onchange="updateClubData(${index}, 'name', this.value)">${optionsHtml}</select>
-    <input type="number" class="club-dist" value="${club.dist}" onchange="updateClubData(${index}, 'dist', this.value)">
-    <span style="color:#888;">yds</span>
-  `;
+  row.innerHTML = `<span style="color:#888; font-size:12px;">${index+1}</span><select class="club-sel" onchange="updateClubData(${index},'name',this.value)">${optionsHtml}</select><input type="number" class="club-dist" value="${club.dist}" onchange="updateClubData(${index},'dist',this.value)"><span style="color:#888;">yds</span>`;
   container.appendChild(row);
 });
-function updateClubData(index, key, value) {
-  if(key === 'dist') value = parseInt(value) || 0;
-  myClubs[index][key] = value;
-}
-function askTotal() {
-  const newDist = prompt("トータルヤードを入力してください", totalDist);
-  if (newDist) {
-    totalDist = parseInt(newDist);
-    document.getElementById('total-val').innerText = totalDist;
-    document.getElementById('remaining').innerText = totalDist;
-  }
-}
-function toggleSettings() {
-  const panel = document.getElementById('settings-panel');
-  panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
-}
+function updateClubData(i,k,v){ if(k==='dist')v=parseInt(v)||0; myClubs[i][k]=v; }
+function askTotal(){ const n = prompt("ヤード入力", totalDist); if(n){ totalDist=parseInt(n); document.getElementById('total-val').innerText=totalDist; document.getElementById('remaining').innerText=totalDist; } }
+function toggleSettings(){ const p=document.getElementById('settings-panel'); p.style.display=(p.style.display==='flex')?'none':'flex'; }
 function calc(lat1, lon1, lat2, lon2) {
   const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -155,19 +176,10 @@ function update(pos) {
   document.getElementById('drive').innerText = yards.toString().padStart(3, '0');
   document.getElementById('remaining').innerText = remaining;
   let bestClub = "SHOT A";
-  myClubs.forEach(club => {
-    if (club.name !== "---" && club.dist > 0) {
-      if (remaining <= club.dist) {
-        bestClub = club.name;
-      }
-    }
-  });
-  document.getElementById('shot-btn').innerText = bestClub;
-  if (bestClub === "SHOT A") {
-    document.getElementById('shot-btn').style.fontSize = "20px";
-  } else {
-    document.getElementById('shot-btn').style.fontSize = "60px";
-  }
+  myClubs.forEach(club => { if (club.name !== "---" && club.dist > 0 && remaining <= club.dist) bestClub = club.name; });
+  const btn = document.getElementById('shot-btn');
+  btn.innerText = bestClub;
+  btn.style.fontSize = (bestClub === "SHOT A") ? "20px" : "60px";
 }
 function startShot() {
   if (navigator.vibrate) navigator.vibrate(50);
