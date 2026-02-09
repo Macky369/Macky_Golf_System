@@ -43,17 +43,14 @@
     .reset-btn { width: 55px; height: 55px; border-radius: 50%; background: #444; color: #fff; border: none; font-size: 10px; }
     .spacer { width: 55px; }
 
-    /* ⚙️アイコンは右端 */
     .settings-icon { position: absolute; right: 20px; top: 20px; font-size: 32px; z-index: 10; cursor: pointer; }
 
-    /* 設定画面 */
     #settings-panel {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; z-index: 100;
     }
     .settings-header { color: #28a745; margin: 20px 0 10px; font-size: 20px; }
     
-    /* 🛠️ スクロール可能に修正 */
     .club-list { 
       overflow-y: auto !important; 
       flex: 1; width: 90%; padding: 10px; 
@@ -64,6 +61,9 @@
     select.club-sel { background: #333; color: #fff; border: 1px solid #555; padding: 10px; border-radius: 4px; width: 80px; font-size: 16px; }
     input.club-dist { background: #000; color: #28a745; border: 1px solid #444; padding: 10px; width: 70px; text-align: center; border-radius: 4px; font-size: 16px; font-weight: bold; }
     .close-btn { margin: 15px 0 25px; padding: 12px 30px; background: #28a745; border: none; color: white; border-radius: 25px; font-weight: bold; }
+
+    /* バージョン表記用 */
+    .version-tag { position: absolute; bottom: 5px; right: 10px; font-size: 9px; color: #444; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -84,6 +84,7 @@
     <div id="drive">000</div>
   </div>
   <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
+  <div class="version-tag">Ver 1.0.2 - Macky Edition</div>
 </div>
 
 <div id="settings-panel">
