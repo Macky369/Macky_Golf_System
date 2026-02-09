@@ -32,7 +32,6 @@
     #remaining { font-size: 80px; font-weight: bold; color: #ff4444; line-height: 1; margin-bottom: -10px; }
     #total-val { font-size: 26px; color: #28a745; border-bottom: 2px dashed #28a745; cursor: pointer; }
     
-    /* ショットボタンとスコアボタンの並び */
     .btn-row { display: flex; align-items: center; gap: 15px; width: 100%; justify-content: center; margin: 5px 0; }
     
     #shot-btn {
@@ -44,17 +43,15 @@
     @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.95); } }
 
     .side-btn { width: 60px; height: 60px; border-radius: 50%; background: #444; color: #fff; border: none; font-size: 10px; font-weight: bold; }
-    .score-btn { background: #007bff; box-shadow: 0 4px #004085; } /* 青色のスコアボタン */
+    .score-btn { background: #007bff; box-shadow: 0 4px #004085; }
 
     #drive-info { text-align: center; }
     #drive { font-size: 38px; font-weight: bold; color: #fff; }
-    #last-shot-dist { font-size: 14px; color: #007bff; font-weight: bold; } /* 前回の飛距離 */
+    #last-shot-dist { font-size: 14px; color: #007bff; font-weight: bold; }
     
     .version-info { font-size: 10px; color: #666; margin-left: 8px; vertical-align: bottom; }
-
     .settings-icon { position: absolute; right: 20px; top: 20px; font-size: 32px; z-index: 10; cursor: pointer; }
 
-    /* パネル共通設定 */
     .modal-panel {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; z-index: 100;
@@ -98,7 +95,7 @@
   <div id="drive-info">
     <div class="label">DRIVE (FROM START)</div>
     <div>
-      <span id="drive">000</span><span class="version-info">v1.0.9</span>
+      <span id="drive">000</span><span class="version-info">v1.1.0</span>
     </div>
     <div id="last-shot-dist">LAST SHOT: --- yds</div>
   </div>
@@ -137,6 +134,24 @@ zanpaHoles.forEach(hole => {
   holeList.appendChild(item);
 });
 
+// クラブ判定ロジックを関数化
+function getBestClub(dist) {
+  let best = "SHOT A";
+  myClubs.forEach(club => {
+    if (club.name !== "---" && club.dist > 0 && dist <= club.dist) {
+      best = club.name;
+    }
+  });
+  return best;
+}
+
+function updateClubDisplay(dist) {
+  const best = getBestClub(dist);
+  const btn = document.getElementById('shot-btn');
+  btn.innerText = best;
+  btn.style.fontSize = (best === "SHOT A") ? "20px" : "60px";
+}
+
 function selectHole(d) {
   totalDist = d;
   score = 0;
@@ -145,6 +160,10 @@ function selectHole(d) {
   document.getElementById('remaining').innerText = totalDist;
   document.getElementById('score-display').innerText = "SCORE: 0";
   document.getElementById('last-shot-dist').innerText = "LAST SHOT: --- yds";
+  
+  // ホール選択直後にクラブを表示！
+  updateClubDisplay(totalDist);
+  
   toggleHolePanel();
 }
 
@@ -152,8 +171,6 @@ function addScore() {
   if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
   score++;
   document.getElementById('score-display').innerText = "SCORE: " + score;
-  
-  // 今の地点を「最後に打った場所」として記憶
   navigator.geolocation.getCurrentPosition(pos => {
     lastShotPos = pos.coords;
   }, null, {enableHighAccuracy:true});
@@ -179,8 +196,13 @@ myClubs.forEach((club, index) => {
   row.innerHTML = `<span style="color:#888; font-size:12px;">${index+1}</span><select class="club-sel" onchange="updateClubData(${index},'name',this.value)">${optionsHtml}</select><input type="number" class="club-dist" value="${club.dist}" onchange="updateClubData(${index},'dist',this.value)"><span style="color:#888;">yds</span>`;
   container.appendChild(row);
 });
-function updateClubData(i,k,v){ if(k==='dist')v=parseInt(v)||0; myClubs[i][k]=v; }
-function askTotal(){ const n = prompt("ヤード入力", totalDist); if(n){ totalDist=parseInt(n); document.getElementById('total-val').innerText=totalDist; document.getElementById('remaining').innerText=totalDist; } }
+function updateClubData(i,k,v){ 
+  if(k==='dist')v=parseInt(v)||0; 
+  myClubs[i][k]=v; 
+  // 設定変更時も表示に反映
+  if(totalDist > 0) updateClubDisplay(totalDist);
+}
+function askTotal(){ const n = prompt("ヤード入力", totalDist); if(n){ totalDist=parseInt(n); document.getElementById('total-val').innerText=totalDist; document.getElementById('remaining').innerText=totalDist; updateClubDisplay(totalDist); } }
 function toggleSettings(){ const p=document.getElementById('settings-panel'); p.style.display=(p.style.display==='flex')?'none':'flex'; }
 
 function calc(lat1, lon1, lat2, lon2) {
@@ -193,7 +215,6 @@ function calc(lat1, lon1, lat2, lon2) {
 
 function update(pos) {
   if (!startPos) return;
-  // スタート地点（ティー）からの距離
   const d = calc(startPos.latitude, startPos.longitude, pos.coords.latitude, pos.coords.longitude);
   const yards = Math.floor(d * 1.09361);
   const remaining = Math.max(0, totalDist - yards);
@@ -201,18 +222,13 @@ function update(pos) {
   document.getElementById('drive').innerText = yards.toString().padStart(3, '0');
   document.getElementById('remaining').innerText = remaining;
 
-  // 前回のショット地点からの飛距離
   if (lastShotPos) {
     const ld = calc(lastShotPos.latitude, lastShotPos.longitude, pos.coords.latitude, pos.coords.longitude);
     const lyards = Math.floor(ld * 1.09361);
     document.getElementById('last-shot-dist').innerText = "LAST SHOT: " + lyards + " yds";
   }
 
-  let bestClub = "SHOT A";
-  myClubs.forEach(club => { if (club.name !== "---" && club.dist > 0 && remaining <= club.dist) bestClub = club.name; });
-  const btn = document.getElementById('shot-btn');
-  btn.innerText = bestClub;
-  btn.style.fontSize = (bestClub === "SHOT A") ? "20px" : "60px";
+  updateClubDisplay(remaining);
 }
 
 function startShot() {
@@ -224,7 +240,7 @@ function startShot() {
   if (watchId) navigator.geolocation.clearWatch(watchId);
   navigator.geolocation.getCurrentPosition(pos => {
     startPos = pos.coords;
-    lastShotPos = pos.coords; // 1打目地点としてセット
+    lastShotPos = pos.coords;
     watchId = navigator.geolocation.watchPosition(update, null, {enableHighAccuracy:true});
   }, null, {enableHighAccuracy:true});
 }
