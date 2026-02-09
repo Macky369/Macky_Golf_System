@@ -21,17 +21,19 @@
     .cockpit {
       position: relative; width: 100vw; height: 100vh;
       background: radial-gradient(circle, #1a1a1a 60%, #333 95%, #000 100%);
-      display: flex; flex-direction: column; align-items: center; justify-content: space-between; /* 均等から調整 */
-      padding: 10% 10% 15% 10%; /* 下側の余白を15%に増やして全体を上に */
+      display: flex; flex-direction: column; align-items: center; 
+      justify-content: center; /* ← 真ん中に寄せる */
+      gap: 30px; /* 各要素の間隔 */
+      padding: 0 10% 80px 10%; /* ← 下側に80pxの大きな余白を確保！ */
       box-sizing: border-box;
     }
 
     .label { font-size: 11px; color: #888; letter-spacing: 2px; }
     #remaining { font-size: 80px; font-weight: bold; color: #ff4444; line-height: 1; }
-    #total-val { font-size: 26px; color: #28a745; border-bottom: 2px dashed #28a745; cursor: pointer; }
-    #drive { font-size: 38px; font-weight: bold; color: #fff; margin-bottom: 10px; }
+    #total-val { font-size: 26px; color: #28a745; border-bottom: 2px dashed #28a745; cursor: pointer; margin-bottom: 10px; }
+    #drive { font-size: 38px; font-weight: bold; color: #fff; }
 
-    .btn-row { display: flex; align-items: center; gap: 20px; width: 100%; justify-content: center; }
+    .btn-row { display: flex; align-items: center; gap: 20px; width: 100%; justify-content: center; margin: 10px 0; }
     
     #shot-btn {
       width: 140px; height: 140px; border-radius: 50%;
@@ -63,8 +65,8 @@
     input.club-dist { background: #000; color: #28a745; border: 1px solid #444; padding: 10px; width: 70px; text-align: center; border-radius: 4px; font-size: 16px; font-weight: bold; }
     .close-btn { margin: 15px 0 25px; padding: 12px 30px; background: #28a745; border: none; color: white; border-radius: 25px; font-weight: bold; }
 
-    /* バージョン表記用：色を少し明るく、位置を少し上に */
-    .version-tag { position: absolute; bottom: 15px; right: 15px; font-size: 10px; color: #666; pointer-events: none; }
+    /* バージョン表記用：DRIVEのすぐ下に固定 */
+    .version-tag { margin-top: 5px; font-size: 10px; color: #444; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -74,18 +76,22 @@
     <div class="label">TOTAL YARDS</div>
     <div id="total-val" onclick="askTotal()">400</div>
   </div>
+  
   <div id="remaining">---</div>
+  
   <div class="btn-row">
     <button class="reset-btn" onclick="resetAll()">RESET</button>
     <button id="shot-btn" onclick="startShot()">SHOT A</button>
     <div class="spacer"></div>
   </div>
+  
   <div style="text-align:center">
     <div class="label">DRIVE</div>
     <div id="drive">000</div>
+    <div class="version-tag">Ver 1.0.4 - Macky Edition</div>
   </div>
+
   <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
-  <div class="version-tag">Ver 1.0.3 - Macky Edition</div>
 </div>
 
 <div id="settings-panel">
@@ -95,8 +101,8 @@
 </div>
 
 <script>
+/* JS部分は変更なし */
 let startPos = null, watchId = null, totalDist = 400;
-
 const clubOptions = ["---", "1W", "3W", "5W", "7W", "9W", "2U", "3U", "4U", "5U", "6U", "3i", "4i", "5i", "6i", "7i", "8i", "9i", "PW", "AW", "GW", "SW", "LW", "PT"];
 let myClubs = [
   {name: "1W", dist: 230}, {name: "5W", dist: 190}, {name: "5U", dist: 170},
@@ -104,7 +110,6 @@ let myClubs = [
   {name: "PW", dist: 115}, {name: "AW", dist: 95}, {name: "SW", dist: 75},
   {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}
 ];
-
 const container = document.getElementById('club-container');
 myClubs.forEach((club, index) => {
   const row = document.createElement('div');
@@ -118,12 +123,10 @@ myClubs.forEach((club, index) => {
   `;
   container.appendChild(row);
 });
-
 function updateClubData(index, key, value) {
   if(key === 'dist') value = parseInt(value) || 0;
   myClubs[index][key] = value;
 }
-
 function askTotal() {
   const newDist = prompt("トータルヤードを入力してください", totalDist);
   if (newDist) {
@@ -132,12 +135,10 @@ function askTotal() {
     document.getElementById('remaining').innerText = totalDist;
   }
 }
-
 function toggleSettings() {
   const panel = document.getElementById('settings-panel');
   panel.style.display = (panel.style.display === 'flex') ? 'none' : 'flex';
 }
-
 function calc(lat1, lon1, lat2, lon2) {
   const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -145,16 +146,13 @@ function calc(lat1, lon1, lat2, lon2) {
   const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-
 function update(pos) {
   if (!startPos) return;
   const d = calc(startPos.latitude, startPos.longitude, pos.coords.latitude, pos.coords.longitude);
   const yards = Math.floor(d * 1.09361);
   const remaining = Math.max(0, totalDist - yards);
-
   document.getElementById('drive').innerText = yards.toString().padStart(3, '0');
   document.getElementById('remaining').innerText = remaining;
-
   let bestClub = "SHOT A";
   myClubs.forEach(club => {
     if (club.name !== "---" && club.dist > 0) {
@@ -164,14 +162,12 @@ function update(pos) {
     }
   });
   document.getElementById('shot-btn').innerText = bestClub;
-
   if (bestClub === "SHOT A") {
     document.getElementById('shot-btn').style.fontSize = "20px";
   } else {
     document.getElementById('shot-btn').style.fontSize = "60px";
   }
 }
-
 function startShot() {
   if (navigator.vibrate) navigator.vibrate(50);
   document.getElementById('remaining').innerText = totalDist;
@@ -183,7 +179,6 @@ function startShot() {
     watchId = navigator.geolocation.watchPosition(update, null, {enableHighAccuracy:true});
   }, null, {enableHighAccuracy:true});
 }
-
 function resetAll() {
   if (navigator.vibrate) navigator.vibrate([30, 30]);
   if (watchId) navigator.geolocation.clearWatch(watchId);
