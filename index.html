@@ -23,8 +23,8 @@
       background: radial-gradient(circle, #1a1a1a 60%, #333 95%, #000 100%);
       display: flex; flex-direction: column; align-items: center; 
       justify-content: center; 
-      gap: 20px;
-      padding: 0 10% 20px 10%; /* 全体の下余白を微調整 */
+      gap: 25px;
+      padding: 0 10% 40px 10%;
       box-sizing: border-box;
     }
 
@@ -32,6 +32,9 @@
     #remaining { font-size: 80px; font-weight: bold; color: #ff4444; line-height: 1; }
     #total-val { font-size: 26px; color: #28a745; border-bottom: 2px dashed #28a745; cursor: pointer; margin-bottom: 5px; }
     #drive { font-size: 38px; font-weight: bold; color: #fff; }
+    
+    /* バージョン表記をDRIVEの横に添える設定 */
+    .version-info { font-size: 10px; color: #666; margin-left: 8px; vertical-align: bottom; }
 
     .btn-row { display: flex; align-items: center; gap: 20px; width: 100%; justify-content: center; margin: 5px 0; }
     
@@ -64,9 +67,6 @@
     select.club-sel { background: #333; color: #fff; border: 1px solid #555; padding: 10px; border-radius: 4px; width: 80px; font-size: 16px; }
     input.club-dist { background: #000; color: #28a745; border: 1px solid #444; padding: 10px; width: 70px; text-align: center; border-radius: 4px; font-size: 16px; font-weight: bold; }
     .close-btn { margin: 15px 0 25px; padding: 12px 30px; background: #28a745; border: none; color: white; border-radius: 25px; font-weight: bold; }
-
-    /* 🛠️ バージョン：さらに上に持ち上げ(30px)て、色もさらに明るく(#aaa) */
-    .version-tag { position: absolute; bottom: 80px; right: 70px; font-size: 10px; color: #aaa; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -87,11 +87,12 @@
   
   <div style="text-align:center">
     <div class="label">DRIVE</div>
-    <div id="drive">000</div>
+    <div>
+      <span id="drive">000</span><span class="version-info">v1.0.7</span>
+    </div>
   </div>
 
   <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
-  <div class="version-tag">Ver 1.0.6 - Macky Edition</div>
 </div>
 
 <div id="settings-panel">
@@ -101,7 +102,7 @@
 </div>
 
 <script>
-/* JS部分は共通 */
+/* JS部分は変更なし */
 let startPos = null, watchId = null, totalDist = 400;
 const clubOptions = ["---", "1W", "3W", "5W", "7W", "9W", "2U", "3U", "4U", "5U", "6U", "3i", "4i", "5i", "6i", "7i", "8i", "9i", "PW", "AW", "GW", "SW", "LW", "PT"];
 let myClubs = [
