@@ -37,10 +37,14 @@
     #shot-btn {
       width: 140px; height: 140px; border-radius: 50%;
       background: #28a745; color: white; border: none;
-      font-size: 35px; font-weight: 900; box-shadow: 0 6px #155724;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      box-shadow: 0 6px #155724;
     }
     #shot-btn.measuring { background: #ff8c00; box-shadow: 0 0 20px #ff8c00; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.95); } }
+
+    #club-name { font-size: 55px; font-weight: 900; line-height: 1; }
+    #club-dist-val { font-size: 14px; font-weight: bold; opacity: 0.9; margin-top: 2px; }
 
     .side-btn { width: 60px; height: 60px; border-radius: 50%; background: #444; color: #fff; border: none; font-size: 10px; font-weight: bold; }
     .score-btn { background: #007bff; box-shadow: 0 4px #004085; }
@@ -84,7 +88,10 @@
   
   <div class="btn-row">
     <button class="side-btn" onclick="resetAll()">RESET</button>
-    <button id="shot-btn" onclick="startShot()">SHOT A</button>
+    <button id="shot-btn" onclick="startShot()">
+      <div id="club-name">SHOT A</div>
+      <div id="club-dist-val"></div>
+    </button>
     <button class="side-btn score-btn" onclick="addScore()">＋1<br>SHOT</button>
   </div>
 
@@ -95,7 +102,7 @@
   <div id="drive-info">
     <div class="label">DRIVE (FROM START)</div>
     <div>
-      <span id="drive">000</span><span class="version-info">v1.1.0</span>
+      <span id="drive">000</span><span class="version-info">v1.1.1</span>
     </div>
     <div id="last-shot-dist">LAST SHOT: --- yds</div>
   </div>
@@ -134,36 +141,34 @@ zanpaHoles.forEach(hole => {
   holeList.appendChild(item);
 });
 
-// クラブ判定ロジックを関数化
-function getBestClub(dist) {
-  let best = "SHOT A";
+function getBestClubInfo(dist) {
+  let best = {name: "SHOT A", d: ""};
   myClubs.forEach(club => {
     if (club.name !== "---" && club.dist > 0 && dist <= club.dist) {
-      best = club.name;
+      best = {name: club.name, d: club.dist + " yds"};
     }
   });
   return best;
 }
 
 function updateClubDisplay(dist) {
-  const best = getBestClub(dist);
-  const btn = document.getElementById('shot-btn');
-  btn.innerText = best;
-  btn.style.fontSize = (best === "SHOT A") ? "20px" : "60px";
+  const info = getBestClubInfo(dist);
+  const nameEl = document.getElementById('club-name');
+  const distEl = document.getElementById('club-dist-val');
+  
+  nameEl.innerText = info.name;
+  distEl.innerText = info.d ? "(" + info.d + ")" : "";
+  
+  nameEl.style.fontSize = (info.name === "SHOT A") ? "20px" : "55px";
 }
 
 function selectHole(d) {
-  totalDist = d;
-  score = 0;
-  lastShotPos = null;
+  totalDist = d; score = 0; lastShotPos = null;
   document.getElementById('total-val').innerText = totalDist;
   document.getElementById('remaining').innerText = totalDist;
   document.getElementById('score-display').innerText = "SCORE: 0";
   document.getElementById('last-shot-dist').innerText = "LAST SHOT: --- yds";
-  
-  // ホール選択直後にクラブを表示！
   updateClubDisplay(totalDist);
-  
   toggleHolePanel();
 }
 
@@ -171,9 +176,7 @@ function addScore() {
   if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
   score++;
   document.getElementById('score-display').innerText = "SCORE: " + score;
-  navigator.geolocation.getCurrentPosition(pos => {
-    lastShotPos = pos.coords;
-  }, null, {enableHighAccuracy:true});
+  navigator.geolocation.getCurrentPosition(pos => { lastShotPos = pos.coords; }, null, {enableHighAccuracy:true});
 }
 
 function toggleHolePanel() {
@@ -196,12 +199,7 @@ myClubs.forEach((club, index) => {
   row.innerHTML = `<span style="color:#888; font-size:12px;">${index+1}</span><select class="club-sel" onchange="updateClubData(${index},'name',this.value)">${optionsHtml}</select><input type="number" class="club-dist" value="${club.dist}" onchange="updateClubData(${index},'dist',this.value)"><span style="color:#888;">yds</span>`;
   container.appendChild(row);
 });
-function updateClubData(i,k,v){ 
-  if(k==='dist')v=parseInt(v)||0; 
-  myClubs[i][k]=v; 
-  // 設定変更時も表示に反映
-  if(totalDist > 0) updateClubDisplay(totalDist);
-}
+function updateClubData(i,k,v){ if(k==='dist')v=parseInt(v)||0; myClubs[i][k]=v; if(totalDist > 0) updateClubDisplay(totalDist); }
 function askTotal(){ const n = prompt("ヤード入力", totalDist); if(n){ totalDist=parseInt(n); document.getElementById('total-val').innerText=totalDist; document.getElementById('remaining').innerText=totalDist; updateClubDisplay(totalDist); } }
 function toggleSettings(){ const p=document.getElementById('settings-panel'); p.style.display=(p.style.display==='flex')?'none':'flex'; }
 
@@ -218,16 +216,13 @@ function update(pos) {
   const d = calc(startPos.latitude, startPos.longitude, pos.coords.latitude, pos.coords.longitude);
   const yards = Math.floor(d * 1.09361);
   const remaining = Math.max(0, totalDist - yards);
-  
   document.getElementById('drive').innerText = yards.toString().padStart(3, '0');
   document.getElementById('remaining').innerText = remaining;
-
   if (lastShotPos) {
     const ld = calc(lastShotPos.latitude, lastShotPos.longitude, pos.coords.latitude, pos.coords.longitude);
     const lyards = Math.floor(ld * 1.09361);
     document.getElementById('last-shot-dist').innerText = "LAST SHOT: " + lyards + " yds";
   }
-
   updateClubDisplay(remaining);
 }
 
@@ -239,8 +234,7 @@ function startShot() {
   document.getElementById('shot-btn').classList.add('measuring');
   if (watchId) navigator.geolocation.clearWatch(watchId);
   navigator.geolocation.getCurrentPosition(pos => {
-    startPos = pos.coords;
-    lastShotPos = pos.coords;
+    startPos = pos.coords; lastShotPos = pos.coords;
     watchId = navigator.geolocation.watchPosition(update, null, {enableHighAccuracy:true});
   }, null, {enableHighAccuracy:true});
 }
@@ -250,8 +244,9 @@ function resetAll() {
   if (watchId) navigator.geolocation.clearWatch(watchId);
   startPos = null; lastShotPos = null; score = 0;
   document.getElementById('shot-btn').classList.remove('measuring');
-  document.getElementById('shot-btn').innerText = "SHOT A";
-  document.getElementById('shot-btn').style.fontSize = "20px";
+  document.getElementById('club-name').innerText = "SHOT A";
+  document.getElementById('club-name').style.fontSize = "20px";
+  document.getElementById('club-dist-val').innerText = "";
   document.getElementById('drive').innerText = "000";
   document.getElementById('remaining').innerText = "---";
   document.getElementById('score-display').innerText = "SCORE: 0";
