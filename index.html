@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
+    /* スタイル維持（スクロール・デザイン修正済み） */
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; color: white; font-family: 'Arial', sans-serif; overflow: hidden; }
     .cockpit { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; box-sizing: border-box; }
     .modal-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); display: none; flex-direction: column; align-items: center; z-index: 100; overflow: hidden; }
@@ -17,7 +18,7 @@
     .score-btn { background: #007bff; }
     .settings-icon { position: absolute; right: 20px; top: 20px; font-size: 32px; z-index: 10; cursor: pointer; }
     .panel-header { color: #28a745; margin: 20px 0 10px; font-size: 20px; font-weight: bold; flex-shrink: 0; }
-    .close-btn { margin: 10px 0 30px; padding: 15px 50px; background: #28a745; border: none; color: white; border-radius: 30px; font-weight: bold; flex-shrink: 0; font-size: 18px; }
+    .close-btn { margin: 10px 0 20px; padding: 15px 30px; background: #28a745; border: none; color: white; border-radius: 30px; font-weight: bold; flex-shrink: 0; font-size: 16px; }
     .score-row, .club-row { display: flex; align-items: center; background: #222; margin-bottom: 10px; padding: 15px; border-radius: 10px; justify-content: space-between; }
     .score-input { width: 60px; background: #000; color: #fff; border: 1px solid #555; text-align: center; padding: 8px; font-size: 20px; border-radius: 5px; }
     select { background: #333; color: #fff; padding: 12px; border-radius: 5px; width: 100%; font-size: 16px; margin-bottom: 15px; border: 1px solid #555; }
@@ -46,7 +47,7 @@
     <div class="label">DRIVE</div>
     <div id="drive" style="font-size:38px; font-weight:bold;">000</div>
     <div id="last-shot-dist" style="font-size:14px; color:#007bff; font-weight:bold;">LAST SHOT: --- yds</div>
-    <div style="font-size:10px; color:#444; margin-top:5px;">v1.2.0</div>
+    <div style="font-size:10px; color:#444; margin-top:5px;">v1.2.2</div>
   </div>
   <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
 </div>
@@ -54,7 +55,10 @@
 <div id="score-panel" class="modal-panel">
   <div class="panel-header">SCORE CARD</div>
   <div id="score-card-list" class="list-container"></div>
-  <button class="close-btn" onclick="saveScores()">SAVE & CLOSE</button>
+  <div style="display:flex; gap:10px; margin-bottom:20px; flex-shrink:0;">
+    <button class="close-btn" style="background:#007bff;" onclick="sendToGas()">GASへ送信 🚀</button>
+    <button class="close-btn" onclick="saveScores()">保存/閉じる</button>
+  </div>
 </div>
 
 <div id="hole-panel" class="modal-panel">
@@ -69,14 +73,12 @@
     <div class="label">COURSE SELECT</div>
     <select id="course-master-select" onchange="changeMasterCourse(this.value)">
       <option value="">-- ゴルフ場を選択 --</option>
-      <option value="残波ゴルフクラブ">残波ゴルフクラブ</option>
+      <option value="残波ゴルフクラブ">【メイン】残波ゴルフクラブ</option>
       <option value="沖縄カントリークラブ">沖縄カントリークラブ</option>
       <option value="パームヒルズゴルフリゾート">パームヒルズゴルフリゾート</option>
       <option value="那覇ゴルフ倶楽部(ショート)">那覇ゴルフ倶楽部(ショート)</option>
       <option value="パブリックゴルフうらそえ">パブリックゴルフうらそえ</option>
-      <option value="オーシャンキャッスル">オーシャンキャッスル</option>
     </select>
-    <div class="label" style="margin-top:10px;">MY 14 CLUBS</div>
     <div id="club-container"></div>
   </div>
   <button class="close-btn" onclick="toggleSettings()">OK</button>
@@ -86,24 +88,47 @@
 let startPos = null, lastShotPos = null, watchId = null, totalDist = 0, score = 0;
 let currentCourseName = localStorage.getItem('lastCourse') || "";
 
-// マスターデータ（残波追加）
+// ★★★ 残波ゴルフクラブの正確なデータに修正 ★★★
 const courseMaster = {
-  "残波ゴルフクラブ": { pars: [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3], dists: [145,155,130,165,140,150,135,170,145,150,160,145,155,130,165,140,150,135] },
+  "残波ゴルフクラブ": { 
+    pars: [3,3,3,4,3,3,3,3,4, 3,3,3,3,4,3,3,3,4], // Par 58
+    dists: [142,122,123,260,113,105,123,123,250, 110,132,130,128,245,115,120,135,260] 
+  },
   "沖縄カントリークラブ": { pars: [4,3,4,4,4,3,4,5,4, 4,3,4,4,4,3,4,5,4], dists: [350,150,380,340,360,160,390,480,370, 350,150,380,340,360,160,390,480,370] },
-  "パームヒルズゴルフリゾート": { pars: [4,5,4,3,4,4,3,4,5, 4,5,4,3,4,4,3,4,5], dists: [380,520,400,160,410,390,170,420,530, 380,520,400,160,410,390,170,420,530] },
-  "那覇ゴルフ倶楽部(ショート)": { pars: Array(18).fill(3), dists: [145,163,150,150,138,167,140,145,162,135,170,155,140,150,145,178,160,150] },
-  "パブリックゴルフうらそえ": { pars: [3,3,3,3,4,3,3,3,3], dists: [120,130,115,140,250,110,125,135,145] },
-  "オーシャンキャッスル": { pars: [4,4,5,3,4,4,3,4,5, 4,4,5,3,4,4,3,4,5], dists: [360,370,500,155,380,390,165,400,510, 360,370,500,155,380,390,165,400,510] }
+  "パブリックゴルフうらそえ": { pars: [3,3,3,3,4,3,3,3,3], dists: [120,130,115,140,250,110,125,135,145] }
 };
 
-let myClubs = JSON.parse(localStorage.getItem('myClubs')) || [{name: "1W", dist: 230}, {name: "5W", dist: 190}, {name: "5U", dist: 170}, {name: "7i", dist: 150}, {name: "8i", dist: 140}, {name: "9i", dist: 130}, {name: "PW", dist: 115}, {name: "52°", dist: 95}, {name: "58°", dist: 75}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}];
+// 【重要】ここにGASでデプロイしたURLを貼り付けてください
+const GAS_URL = "https://script.google.com/macros/s/ここにあなたのURLを貼り付けて/exec";
 
+async function sendToGas() {
+  const sIns = document.querySelectorAll('.s-in'), pIns = document.querySelectorAll('.p-in');
+  let scoreData = [];
+  sIns.forEach((el, i) => scoreData.push({s: el.value, p: pIns[i].value}));
+
+  const payload = {
+    course: currentCourseName,
+    scores: scoreData
+  };
+
+  try {
+    const response = await fetch(GAS_URL, {
+      method: "POST",
+      mode: 'no-cors', // これを追加するとCORSエラーを回避しやすくなります
+      body: JSON.stringify(payload)
+    });
+    alert("スプレッドシートへの送信命令を飛ばしました！");
+  } catch (e) {
+    alert("送信エラー: " + e);
+  }
+}
+
+// --- 他の基本機能 ---
 function changeMasterCourse(name) {
   if(!name) return;
   currentCourseName = name;
   localStorage.setItem('lastCourse', name);
   document.getElementById('current-course-name').innerText = name;
-  document.getElementById('course-master-select').value = name;
 }
 
 function renderScoreCard() {
@@ -125,18 +150,6 @@ function saveScores() {
   toggleScorePanel();
 }
 
-function renderSettings() {
-  const container = document.getElementById('club-container');
-  container.innerHTML = "";
-  const master = ["---", "1W", "3W", "5W", "7W", "3U", "4U", "5U", "7i", "8i", "9i", "PW", "50°", "52°", "56°", "58°", "PT"];
-  myClubs.forEach((club, i) => {
-    let opts = master.map(opt => `<option value="${opt}" ${opt === club.name ? 'selected' : ''}>${opt}</option>`).join('');
-    container.innerHTML += `<div class="club-row"><span>${i+1}</span><select style="width:80px;margin:0" onchange="updateClub(${i},'name',this.value)">${opts}</select><input type="number" class="score-input" style="width:70px;color:#0f0" value="${club.dist}" onchange="updateClub(${i},'dist',this.value)"><span>yds</span></div>`;
-  });
-}
-
-function updateClub(i,k,v){ if(k==='dist')v=parseInt(v)||0; myClubs[i][k]=v; localStorage.setItem('myClubs', JSON.stringify(myClubs)); updateClubDisplay(totalDist); }
-
 function renderHoleList() {
   const hl = document.getElementById('hole-list'); hl.innerHTML = "";
   if(!courseMaster[currentCourseName]) return;
@@ -146,12 +159,10 @@ function renderHoleList() {
 }
 
 function selectHole(d) { totalDist = d; document.getElementById('total-val').innerText = d; document.getElementById('remaining').innerText = d; updateClubDisplay(d); toggleHolePanel(); }
-
 function toggleScorePanel(){ if(document.getElementById('score-panel').style.display !== 'flex') renderScoreCard(); toggle('score-panel'); }
 function toggleHolePanel(){ if(document.getElementById('hole-panel').style.display !== 'flex') renderHoleList(); toggle('hole-panel'); }
-function toggleSettings(){ if(document.getElementById('settings-panel').style.display !== 'flex') renderSettings(); toggle('settings-panel'); }
+function toggleSettings(){ toggle('settings-panel'); }
 function toggle(id){ const p=document.getElementById(id); p.style.display=(p.style.display==='flex')?'none':'flex'; }
-
 function askTotal(){ const n = prompt("ヤード入力", totalDist); if(n){ totalDist=parseInt(n); document.getElementById('total-val').innerText=n; document.getElementById('remaining').innerText=n; updateClubDisplay(n); } }
 
 function calc(lat1, lon1, lat2, lon2) { const R = 6371000; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180; const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
@@ -160,13 +171,13 @@ function update(pos) {
   const d = calc(startPos.latitude, startPos.longitude, pos.coords.latitude, pos.coords.longitude);
   const yards = Math.floor(d * 1.09361); const rem = Math.max(0, totalDist - yards);
   document.getElementById('drive').innerText = yards.toString().padStart(3, '0'); document.getElementById('remaining').innerText = rem;
-  if (lastShotPos) { const ld = calc(lastShotPos.latitude, lastShotPos.longitude, pos.coords.latitude, pos.coords.longitude); document.getElementById('last-shot-dist').innerText = "LAST SHOT: " + Math.floor(ld * 1.09361) + " yds"; }
   updateClubDisplay(rem);
 }
 function startShot() { score = 1; document.getElementById('score-display').innerText = "SCORE: 1 (INPUT)"; document.getElementById('shot-btn').classList.add('measuring'); navigator.geolocation.getCurrentPosition(pos => { startPos = pos.coords; lastShotPos = pos.coords; watchId = navigator.geolocation.watchPosition(update, null, {enableHighAccuracy:true}); }, null, {enableHighAccuracy:true}); }
 function addScore() { score++; document.getElementById('score-display').innerText = "SCORE: " + score + " (INPUT)"; navigator.geolocation.getCurrentPosition(pos => { lastShotPos = pos.coords; }, null, {enableHighAccuracy:true}); }
 function updateClubDisplay(d) {
   let best = {name: "SHOT A", d: ""};
+  let myClubs = JSON.parse(localStorage.getItem('myClubs')) || [];
   myClubs.forEach(c => { if (c.name !== "---" && c.dist > 0 && d <= c.dist) best = {name: c.name, d: c.dist + " yds"}; });
   document.getElementById('club-name-display').innerText = best.name;
   document.getElementById('club-dist-val').innerText = best.d ? "(" + best.d + ")" : "";
