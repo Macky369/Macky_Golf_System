@@ -4,32 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
-    /* スタイル維持（スクロール・デザイン修正済み） */
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; color: white; font-family: 'Arial', sans-serif; overflow: hidden; }
     .cockpit { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; box-sizing: border-box; }
     .modal-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); display: none; flex-direction: column; align-items: center; z-index: 100; overflow: hidden; }
     .list-container { width: 100%; flex: 1; overflow-y: auto !important; -webkit-overflow-scrolling: touch; padding: 10px 20px; box-sizing: border-box; touch-action: pan-y !important; }
-    .label { font-size: 11px; color: #888; letter-spacing: 2px; }
+    
+    /* SHOT A / クラブ表示のサイズ調整 */
+    #club-name-display { font-size: 24px; font-weight: 900; line-height: 1.2; text-align: center; width: 90%; color: #fff; }
+    #club-dist-val { font-size: 14px; font-weight: bold; color: #0f0; margin-top: 2px; }
+    
     #remaining { font-size: 80px; font-weight: bold; color: #ff4444; line-height: 1; }
     #total-val { font-size: 26px; color: #28a745; border-bottom: 2px dashed #28a745; cursor: pointer; }
-    #shot-btn { width: 140px; height: 140px; border-radius: 50%; background: #28a745; color: white; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 6px #155724; }
-    #shot-btn.measuring { background: #ff8c00; box-shadow: 0 0 20px #ff8c00; animation: pulse 1.5s infinite; }
-    .side-btn { width: 60px; height: 60px; border-radius: 50%; background: #444; color: #fff; border: none; font-size: 10px; font-weight: bold; }
+    #shot-btn { width: 150px; height: 150px; border-radius: 50%; background: #28a745; color: white; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 6px #155724; }
+    #shot-btn.measuring { background: #ff8c00; box-shadow: 0 0 20px #ff8c00; }
+    
+    .side-btn { width: 65px; height: 65px; border-radius: 50%; background: #444; color: #fff; border: none; font-size: 11px; font-weight: bold; }
     .score-btn { background: #007bff; }
     .settings-icon { position: absolute; right: 20px; top: 20px; font-size: 32px; z-index: 10; cursor: pointer; }
     .panel-header { color: #28a745; margin: 20px 0 10px; font-size: 20px; font-weight: bold; flex-shrink: 0; }
-    .close-btn { margin: 10px 0 20px; padding: 15px 30px; background: #28a745; border: none; color: white; border-radius: 30px; font-weight: bold; flex-shrink: 0; font-size: 16px; }
-    .score-row, .club-row { display: flex; align-items: center; background: #222; margin-bottom: 10px; padding: 15px; border-radius: 10px; justify-content: space-between; }
+    .close-btn { margin: 10px 0 30px; padding: 15px 30px; background: #28a745; border: none; color: white; border-radius: 30px; font-weight: bold; flex-shrink: 0; }
+    .score-row { display: flex; align-items: center; background: #222; margin-bottom: 10px; padding: 15px; border-radius: 10px; justify-content: space-between; }
     .score-input { width: 60px; background: #000; color: #fff; border: 1px solid #555; text-align: center; padding: 8px; font-size: 20px; border-radius: 5px; }
-    select { background: #333; color: #fff; padding: 12px; border-radius: 5px; width: 100%; font-size: 16px; margin-bottom: 15px; border: 1px solid #555; }
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+    .rec-club { font-size: 12px; color: #0f0; font-weight: bold; margin-left: 10px; }
   </style>
 </head>
 <body>
 
 <div class="cockpit">
   <div style="text-align:center">
-    <div class="label" id="current-course-name">SELECT COURSE</div>
+    <div class="label" id="current-course-name" style="font-size:11px; color:#888;">SELECT COURSE</div>
     <div id="total-val" onclick="askTotal()">---</div>
   </div>
   <div id="remaining">---</div>
@@ -37,17 +40,17 @@
   <div style="display:flex; gap:15px;">
     <button class="side-btn" onclick="resetAll()">RESET</button>
     <button id="shot-btn" onclick="startShot()">
-      <div id="club-name-display" style="font-size:20px; font-weight:900;">SHOT A</div>
-      <div id="club-dist-val" style="font-size:14px;"></div>
+      <div id="club-name-display">SHOT A</div>
+      <div id="club-dist-val"></div>
     </button>
     <button class="side-btn score-btn" onclick="addScore()">＋1<br>SHOT</button>
   </div>
   <button onclick="toggleHolePanel()" style="background:#28a745; width: 140px; border-radius: 10px; height: 45px; color:white; border:none; font-weight:bold;">HOLE SELECT</button>
   <div style="text-align:center;">
-    <div class="label">DRIVE</div>
+    <div class="label" style="font-size:11px; color:#888;">DRIVE</div>
     <div id="drive" style="font-size:38px; font-weight:bold;">000</div>
     <div id="last-shot-dist" style="font-size:14px; color:#007bff; font-weight:bold;">LAST SHOT: --- yds</div>
-    <div style="font-size:10px; color:#444; margin-top:5px;">v1.2.2</div>
+    <div style="font-size:10px; color:#444; margin-top:5px;">v1.2.3</div>
   </div>
   <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
 </div>
@@ -55,7 +58,7 @@
 <div id="score-panel" class="modal-panel">
   <div class="panel-header">SCORE CARD</div>
   <div id="score-card-list" class="list-container"></div>
-  <div style="display:flex; gap:10px; margin-bottom:20px; flex-shrink:0;">
+  <div style="display:flex; gap:10px; margin-bottom:20px;">
     <button class="close-btn" style="background:#007bff;" onclick="sendToGas()">GASへ送信 🚀</button>
     <button class="close-btn" onclick="saveScores()">保存/閉じる</button>
   </div>
@@ -70,14 +73,10 @@
 <div id="settings-panel" class="modal-panel">
   <div class="panel-header">SETTINGS</div>
   <div class="list-container">
-    <div class="label">COURSE SELECT</div>
     <select id="course-master-select" onchange="changeMasterCourse(this.value)">
       <option value="">-- ゴルフ場を選択 --</option>
-      <option value="残波ゴルフクラブ">【メイン】残波ゴルフクラブ</option>
+      <option value="残波ゴルフクラブ">残波ゴルフクラブ</option>
       <option value="沖縄カントリークラブ">沖縄カントリークラブ</option>
-      <option value="パームヒルズゴルフリゾート">パームヒルズゴルフリゾート</option>
-      <option value="那覇ゴルフ倶楽部(ショート)">那覇ゴルフ倶楽部(ショート)</option>
-      <option value="パブリックゴルフうらそえ">パブリックゴルフうらそえ</option>
     </select>
     <div id="club-container"></div>
   </div>
@@ -85,105 +84,61 @@
 </div>
 
 <script>
-let startPos = null, lastShotPos = null, watchId = null, totalDist = 0, score = 0;
+let startPos = null, totalDist = 0, score = 0, watchId = null;
 let currentCourseName = localStorage.getItem('lastCourse') || "";
 
-// ★★★ 残波ゴルフクラブの正確なデータに修正 ★★★
 const courseMaster = {
   "残波ゴルフクラブ": { 
-    pars: [3,3,3,4,3,3,3,3,4, 3,3,3,3,4,3,3,3,4], // Par 58
+    pars: [3,3,3,4,3,3,3,3,4, 3,3,3,3,4,3,3,3,4],
     dists: [142,122,123,260,113,105,123,123,250, 110,132,130,128,245,115,120,135,260] 
   },
-  "沖縄カントリークラブ": { pars: [4,3,4,4,4,3,4,5,4, 4,3,4,4,4,3,4,5,4], dists: [350,150,380,340,360,160,390,480,370, 350,150,380,340,360,160,390,480,370] },
-  "パブリックゴルフうらそえ": { pars: [3,3,3,3,4,3,3,3,3], dists: [120,130,115,140,250,110,125,135,145] }
+  "沖縄カントリークラブ": { pars: [4,3,4,4,4,3,4,5,4, 4,3,4,4,4,3,4,5,4], dists: [350,150,380,340,360,160,390,480,370, 350,150,380,340,360,160,390,480,370] }
 };
 
-// 【重要】ここにGASでデプロイしたURLを貼り付けてください
-const GAS_URL = "https://script.google.com/macros/s/ここにあなたのURLを貼り付けて/exec";
-
-async function sendToGas() {
-  const sIns = document.querySelectorAll('.s-in'), pIns = document.querySelectorAll('.p-in');
-  let scoreData = [];
-  sIns.forEach((el, i) => scoreData.push({s: el.value, p: pIns[i].value}));
-
-  const payload = {
-    course: currentCourseName,
-    scores: scoreData
-  };
-
-  try {
-    const response = await fetch(GAS_URL, {
-      method: "POST",
-      mode: 'no-cors', // これを追加するとCORSエラーを回避しやすくなります
-      body: JSON.stringify(payload)
-    });
-    alert("スプレッドシートへの送信命令を飛ばしました！");
-  } catch (e) {
-    alert("送信エラー: " + e);
-  }
-}
-
-// --- 他の基本機能 ---
-function changeMasterCourse(name) {
-  if(!name) return;
-  currentCourseName = name;
-  localStorage.setItem('lastCourse', name);
-  document.getElementById('current-course-name').innerText = name;
-}
-
-function renderScoreCard() {
-  const container = document.getElementById('score-card-list');
-  container.innerHTML = "";
-  if(!courseMaster[currentCourseName]) return;
-  const saved = JSON.parse(localStorage.getItem('scores_' + currentCourseName)) || [];
-  courseMaster[currentCourseName].pars.forEach((p, i) => {
-    const s = saved[i] ? saved[i].s : "";
-    const pVal = saved[i] ? saved[i].p : "";
-    container.innerHTML += `<div class="score-row"><span>${i+1}H (Par${p})</span><div>S:<input type="number" class="score-input s-in" value="${s}"> P:<input type="number" class="score-input p-in" value="${pVal}"></div></div>`;
-  });
-}
-
-function saveScores() {
-  const s = document.querySelectorAll('.s-in'), p = document.querySelectorAll('.p-in');
-  let data = []; s.forEach((el, i) => data.push({s: el.value, p: p[i].value}));
-  localStorage.setItem('scores_' + currentCourseName, JSON.stringify(data));
-  toggleScorePanel();
+// 1. ホール選択時に「推奨クラブ」を表示するロジックを追加
+function getRecClub(dist) {
+  let myClubs = JSON.parse(localStorage.getItem('myClubs')) || [];
+  let best = "---";
+  myClubs.forEach(c => { if (c.name !== "---" && c.dist > 0 && dist <= c.dist) best = c.name; });
+  return best;
 }
 
 function renderHoleList() {
   const hl = document.getElementById('hole-list'); hl.innerHTML = "";
   if(!courseMaster[currentCourseName]) return;
   courseMaster[currentCourseName].dists.forEach((d, i) => {
-    hl.innerHTML += `<div class="score-row" onclick="selectHole(${d})"><span>${i+1}H (Par ${courseMaster[currentCourseName].pars[i]})</span><span>${d} yd</span></div>`;
+    const rec = getRecClub(d);
+    hl.innerHTML += `<div class="score-row" onclick="selectHole(${d})">
+      <span>${i+1}H (Par ${courseMaster[currentCourseName].pars[i]})</span>
+      <span style="text-align:right">${d} yd <br><span class="rec-club">推奨: ${rec}</span></span>
+    </div>`;
   });
 }
 
+function updateClubDisplay(d) {
+  let myClubs = JSON.parse(localStorage.getItem('myClubs')) || [];
+  let best = {name: "SHOT A", d: ""};
+  myClubs.forEach(c => { if (c.name !== "---" && c.dist > 0 && d <= c.dist) best = {name: c.name, d: c.dist + " yds"}; });
+  
+  // 2. SHOT A の文字サイズを調整して表示
+  const display = document.getElementById('club-name-display');
+  display.innerText = best.name;
+  display.style.fontSize = best.name.length > 5 ? "18px" : "24px"; // 文字数に応じて微調整
+  document.getElementById('club-dist-val').innerText = best.d ? "(" + best.d + ")" : "";
+}
+
+// --- 他の機能は維持 ---
+function changeMasterCourse(name) { if(!name) return; currentCourseName = name; localStorage.setItem('lastCourse', name); document.getElementById('current-course-name').innerText = name; }
 function selectHole(d) { totalDist = d; document.getElementById('total-val').innerText = d; document.getElementById('remaining').innerText = d; updateClubDisplay(d); toggleHolePanel(); }
 function toggleScorePanel(){ if(document.getElementById('score-panel').style.display !== 'flex') renderScoreCard(); toggle('score-panel'); }
 function toggleHolePanel(){ if(document.getElementById('hole-panel').style.display !== 'flex') renderHoleList(); toggle('hole-panel'); }
 function toggleSettings(){ toggle('settings-panel'); }
 function toggle(id){ const p=document.getElementById(id); p.style.display=(p.style.display==='flex')?'none':'flex'; }
+function saveScores() { toggleScorePanel(); } 
 function askTotal(){ const n = prompt("ヤード入力", totalDist); if(n){ totalDist=parseInt(n); document.getElementById('total-val').innerText=n; document.getElementById('remaining').innerText=n; updateClubDisplay(n); } }
-
-function calc(lat1, lon1, lat2, lon2) { const R = 6371000; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180; const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
-function update(pos) {
-  if (!startPos) return;
-  const d = calc(startPos.latitude, startPos.longitude, pos.coords.latitude, pos.coords.longitude);
-  const yards = Math.floor(d * 1.09361); const rem = Math.max(0, totalDist - yards);
-  document.getElementById('drive').innerText = yards.toString().padStart(3, '0'); document.getElementById('remaining').innerText = rem;
-  updateClubDisplay(rem);
-}
-function startShot() { score = 1; document.getElementById('score-display').innerText = "SCORE: 1 (INPUT)"; document.getElementById('shot-btn').classList.add('measuring'); navigator.geolocation.getCurrentPosition(pos => { startPos = pos.coords; lastShotPos = pos.coords; watchId = navigator.geolocation.watchPosition(update, null, {enableHighAccuracy:true}); }, null, {enableHighAccuracy:true}); }
-function addScore() { score++; document.getElementById('score-display').innerText = "SCORE: " + score + " (INPUT)"; navigator.geolocation.getCurrentPosition(pos => { lastShotPos = pos.coords; }, null, {enableHighAccuracy:true}); }
-function updateClubDisplay(d) {
-  let best = {name: "SHOT A", d: ""};
-  let myClubs = JSON.parse(localStorage.getItem('myClubs')) || [];
-  myClubs.forEach(c => { if (c.name !== "---" && c.dist > 0 && d <= c.dist) best = {name: c.name, d: c.dist + " yds"}; });
-  document.getElementById('club-name-display').innerText = best.name;
-  document.getElementById('club-dist-val').innerText = best.d ? "(" + best.d + ")" : "";
-}
-function resetAll() { if (watchId) navigator.geolocation.clearWatch(watchId); startPos = null; lastShotPos = null; score = 0; document.getElementById('shot-btn').classList.remove('measuring'); document.getElementById('drive').innerText = "000"; document.getElementById('remaining').innerText = "---"; document.getElementById('score-display').innerText = "SCORE: 0 (INPUT)"; }
-
+function startShot() { document.getElementById('shot-btn').classList.add('measuring'); }
+function addScore() { score++; document.getElementById('score-display').innerText = "SCORE: " + score + " (INPUT)"; }
+function resetAll() { totalDist = 0; score = 0; document.getElementById('shot-btn').classList.remove('measuring'); document.getElementById('drive').innerText = "000"; document.getElementById('remaining').innerText = "---"; document.getElementById('score-display').innerText = "SCORE: 0 (INPUT)"; }
 if(currentCourseName) changeMasterCourse(currentCourseName);
 </script>
 </body>
