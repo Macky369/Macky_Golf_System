@@ -4,42 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
-    /* 1. 全体のガチガチな固定を解除 */
-    body, html { 
-      margin: 0; padding: 0; width: 100%; height: 100%; 
-      background-color: #000; color: white; 
-      font-family: 'Arial', sans-serif; 
-      overflow: hidden; /* 外側は動かさない */
-    }
-
-    /* 2. コックピット（メイン画面） */
-    .cockpit { 
-      position: relative; width: 100vw; height: 100vh; 
-      display: flex; flex-direction: column; align-items: center; justify-content: center; 
-      gap: 15px; box-sizing: border-box; 
-    }
-
-    /* 3. モーダルパネル（ここがスクロールの肝） */
-    .modal-panel { 
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-      background: rgba(0,0,0,0.98); 
-      display: none; /* JSでflexに切り替え */
-      flex-direction: column; align-items: center; z-index: 100; 
-      overflow: hidden; /* パネル自体ははみ出さない */
-    }
-
-    /* 4. スクロールエリア（ここを自由に動かせるようにする） */
-    .list-container { 
-      width: 100%; 
-      flex: 1; /* 余ったスペースを全部使う */
-      overflow-y: auto !important; /* 縦スクロールを自動許可 */
-      -webkit-overflow-scrolling: touch; /* 滑らか操作 */
-      padding: 10px 20px; 
-      box-sizing: border-box;
-      touch-action: pan-y !important; /* 指での縦移動を強制許可 */
-    }
-
-    /* デザインパーツ */
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; color: white; font-family: 'Arial', sans-serif; overflow: hidden; }
+    .cockpit { position: relative; width: 100vw; height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; box-sizing: border-box; }
+    .modal-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); display: none; flex-direction: column; align-items: center; z-index: 100; overflow: hidden; }
+    .list-container { width: 100%; flex: 1; overflow-y: auto !important; -webkit-overflow-scrolling: touch; padding: 10px 20px; box-sizing: border-box; touch-action: pan-y !important; }
     .label { font-size: 11px; color: #888; letter-spacing: 2px; }
     #remaining { font-size: 80px; font-weight: bold; color: #ff4444; line-height: 1; }
     #total-val { font-size: 26px; color: #28a745; border-bottom: 2px dashed #28a745; cursor: pointer; }
@@ -53,7 +21,6 @@
     .score-row, .club-row { display: flex; align-items: center; background: #222; margin-bottom: 10px; padding: 15px; border-radius: 10px; justify-content: space-between; }
     .score-input { width: 60px; background: #000; color: #fff; border: 1px solid #555; text-align: center; padding: 8px; font-size: 20px; border-radius: 5px; }
     select { background: #333; color: #fff; padding: 12px; border-radius: 5px; width: 100%; font-size: 16px; margin-bottom: 15px; border: 1px solid #555; }
-    
     @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
   </style>
 </head>
@@ -79,7 +46,7 @@
     <div class="label">DRIVE</div>
     <div id="drive" style="font-size:38px; font-weight:bold;">000</div>
     <div id="last-shot-dist" style="font-size:14px; color:#007bff; font-weight:bold;">LAST SHOT: --- yds</div>
-    <div style="font-size:10px; color:#444; margin-top:5px;">v1.1.9</div>
+    <div style="font-size:10px; color:#444; margin-top:5px;">v1.2.0</div>
   </div>
   <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
 </div>
@@ -99,9 +66,10 @@
 <div id="settings-panel" class="modal-panel">
   <div class="panel-header">SETTINGS</div>
   <div class="list-container">
-    <div class="label">COURSE</div>
+    <div class="label">COURSE SELECT</div>
     <select id="course-master-select" onchange="changeMasterCourse(this.value)">
       <option value="">-- ゴルフ場を選択 --</option>
+      <option value="残波ゴルフクラブ">【メイン】残波ゴルフクラブ</option>
       <option value="沖縄カントリークラブ">沖縄カントリークラブ</option>
       <option value="パームヒルズゴルフリゾート">パームヒルズゴルフリゾート</option>
       <option value="那覇ゴルフ倶楽部(ショート)">那覇ゴルフ倶楽部(ショート)</option>
@@ -115,24 +83,27 @@
 </div>
 
 <script>
-// --- 基本データと保存 ---
 let startPos = null, lastShotPos = null, watchId = null, totalDist = 0, score = 0;
 let currentCourseName = localStorage.getItem('lastCourse') || "";
+
+// マスターデータ（残波追加）
 const courseMaster = {
+  "残波ゴルフクラブ": { pars: [3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3], dists: [145,155,130,165,140,150,135,170,145,150,160,145,155,130,165,140,150,135] },
   "沖縄カントリークラブ": { pars: [4,3,4,4,4,3,4,5,4, 4,3,4,4,4,3,4,5,4], dists: [350,150,380,340,360,160,390,480,370, 350,150,380,340,360,160,390,480,370] },
   "パームヒルズゴルフリゾート": { pars: [4,5,4,3,4,4,3,4,5, 4,5,4,3,4,4,3,4,5], dists: [380,520,400,160,410,390,170,420,530, 380,520,400,160,410,390,170,420,530] },
   "那覇ゴルフ倶楽部(ショート)": { pars: Array(18).fill(3), dists: [145,163,150,150,138,167,140,145,162,135,170,155,140,150,145,178,160,150] },
   "パブリックゴルフうらそえ": { pars: [3,3,3,3,4,3,3,3,3], dists: [120,130,115,140,250,110,125,135,145] },
   "オーシャンキャッスル": { pars: [4,4,5,3,4,4,3,4,5, 4,4,5,3,4,4,3,4,5], dists: [360,370,500,155,380,390,165,400,510, 360,370,500,155,380,390,165,400,510] }
 };
+
 let myClubs = JSON.parse(localStorage.getItem('myClubs')) || [{name: "1W", dist: 230}, {name: "5W", dist: 190}, {name: "5U", dist: 170}, {name: "7i", dist: 150}, {name: "8i", dist: 140}, {name: "9i", dist: 130}, {name: "PW", dist: 115}, {name: "52°", dist: 95}, {name: "58°", dist: 75}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}];
 
-// --- 関数群 ---
 function changeMasterCourse(name) {
   if(!name) return;
   currentCourseName = name;
   localStorage.setItem('lastCourse', name);
   document.getElementById('current-course-name').innerText = name;
+  document.getElementById('course-master-select').value = name;
 }
 
 function renderScoreCard() {
@@ -183,7 +154,6 @@ function toggle(id){ const p=document.getElementById(id); p.style.display=(p.sty
 
 function askTotal(){ const n = prompt("ヤード入力", totalDist); if(n){ totalDist=parseInt(n); document.getElementById('total-val').innerText=n; document.getElementById('remaining').innerText=n; updateClubDisplay(n); } }
 
-// GPS (そのまま維持)
 function calc(lat1, lon1, lat2, lon2) { const R = 6371000; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180; const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
 function update(pos) {
   if (!startPos) return;
