@@ -39,12 +39,9 @@
       background: #28a745; color: white; border: none;
       display: flex; flex-direction: column; align-items: center; justify-content: center;
       box-shadow: 0 6px #155724;
-      overflow: hidden; /* はみ出し防止 */
     }
     #shot-btn.measuring { background: #ff8c00; box-shadow: 0 0 20px #ff8c00; animation: pulse 1.5s infinite; }
-    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(0.95); } }
 
-    /* 初期状態を20pxに固定してはみ出しを防止 */
     #club-name-display { font-size: 20px; font-weight: 900; line-height: 1.1; text-align: center; width: 90%; }
     #club-dist-val { font-size: 14px; font-weight: bold; opacity: 0.9; margin-top: 2px; }
 
@@ -66,12 +63,11 @@
     .list-container { flex: 1; width: 95%; overflow-y: auto !important; padding: 10px; }
     .close-btn { margin: 15px 0 25px; padding: 12px 30px; background: #28a745; border: none; color: white; border-radius: 25px; font-weight: bold; }
 
-    .hole-item {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 15px; background: #222; margin-bottom: 8px; border-radius: 8px; font-size: 18px;
-    }
+    .hole-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; background: #222; margin-bottom: 8px; border-radius: 8px; font-size: 18px; }
     .club-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: #222; padding: 5px 10px; border-radius: 8px; gap: 5px; }
-    input.club-name-in { background: #333; color: #fff; border: 1px solid #555; padding: 10px; border-radius: 4px; width: 75px; font-size: 16px; text-align: center; }
+    
+    /* セレクトボックスのデザイン */
+    select.club-sel-v2 { background: #333; color: #fff; border: 1px solid #555; padding: 10px; border-radius: 4px; width: 85px; font-size: 16px; }
     input.club-dist { background: #000; color: #28a745; border: 1px solid #444; padding: 10px; width: 65px; text-align: center; border-radius: 4px; font-size: 16px; font-weight: bold; }
     
     #score-display { font-size: 18px; color: #007bff; font-weight: bold; }
@@ -104,7 +100,7 @@
   <div id="drive-info">
     <div class="label">DRIVE (FROM START)</div>
     <div>
-      <span id="drive">000</span><span class="version-info">v1.1.3</span>
+      <span id="drive">000</span><span class="version-info">v1.1.4</span>
     </div>
     <div id="last-shot-dist">LAST SHOT: --- yds</div>
   </div>
@@ -127,156 +123,68 @@
 <script>
 let startPos = null, lastShotPos = null, watchId = null, totalDist = 0, score = 0;
 
-const zanpaHoles = [
-  {h:1, p:3, d:145}, {h:2, p:3, d:163}, {h:3, p:3, d:150}, {h:4, p:3, d:150}, {h:5, p:3, d:138}, {h:6, p:3, d:167},
-  {h:7, p:4, d:280}, {h:8, p:3, d:145}, {h:9, p:3, d:162},
-  {h:10, p:3, d:135}, {h:11, p:3, d:170}, {h:12, p:3, d:155}, {h:13, p:4, d:310}, {h:14, p:3, d:150}, {h:15, p:4, d:285},
-  {h:16, p:3, d:178}, {h:17, p:4, d:350}, {h:18, p:3, d:150}
-];
+// 残波データ
+const zanpaHoles = [{h:1, p:3, d:145}, {h:2, p:3, d:163}, {h:3, p:3, d:150}, {h:4, p:3, d:150}, {h:5, p:3, d:138}, {h:6, p:3, d:167}, {h:7, p:4, d:280}, {h:8, p:3, d:145}, {h:9, p:3, d:162}, {h:10, p:3, d:135}, {h:11, p:3, d:170}, {h:12, p:3, d:155}, {h:13, p:4, d:310}, {h:14, p:3, d:150}, {h:15, p:4, d:285}, {h:16, p:3, d:178}, {h:17, p:4, d:350}, {h:18, p:3, d:150}];
 
-const holeList = document.getElementById('hole-list');
-zanpaHoles.forEach(hole => {
-  const item = document.createElement('div');
-  item.className = 'hole-item';
-  item.innerHTML = `<span>${hole.h}H (P${hole.p})</span><span class="hole-dist">${hole.d} yd</span>`;
-  item.onclick = () => selectHole(hole.d);
-  holeList.appendChild(item);
-});
+// クラブ選択肢にウェッジを追加
+const clubOptions = ["---", "1W", "3W", "5W", "7W", "9W", "2U", "3U", "4U", "5U", "6U", "3i", "4i", "5i", "6i", "7i", "8i", "9i", "PW", "48°", "50°", "52°", "54°", "56°", "58°", "60°", "AW", "SW", "LW", "PT"];
 
 let myClubs = [
   {name: "1W", dist: 230}, {name: "5W", dist: 190}, {name: "5U", dist: 170},
   {name: "7i", dist: 150}, {name: "8i", dist: 140}, {name: "9i", dist: 130},
   {name: "PW", dist: 115}, {name: "52°", dist: 95}, {name: "58°", dist: 75},
-  {name: "", dist: 0}, {name: "", dist: 0}, {name: "", dist: 0}, {name: "", dist: 0}, {name: "", dist: 0}
+  {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}
 ];
 
-function getBestClubInfo(dist) {
-  let best = {name: "SHOT A", d: ""};
-  myClubs.forEach(club => {
-    if (club.name.trim() !== "" && club.dist > 0 && dist <= club.dist) {
-      best = {name: club.name, d: club.dist + " yds"};
-    }
-  });
-  return best;
-}
+const holeList = document.getElementById('hole-list');
+zanpaHoles.forEach(hole => {
+  const item = document.createElement('div'); item.className = 'hole-item';
+  item.innerHTML = `<span>${hole.h}H (P${hole.p})</span><span class="hole-dist">${hole.d} yd</span>`;
+  item.onclick = () => selectHole(hole.d); holeList.appendChild(item);
+});
 
 function updateClubDisplay(dist) {
-  const info = getBestClubInfo(dist);
+  let best = {name: "SHOT A", d: ""};
+  myClubs.forEach(club => { if (club.name !== "---" && club.dist > 0 && dist <= club.dist) best = {name: club.name, d: club.dist + " yds"}; });
   const nameEl = document.getElementById('club-name-display');
   const distEl = document.getElementById('club-dist-val');
-  nameEl.innerText = info.name;
-  distEl.innerText = info.d ? "(" + info.d + ")" : "";
-  
-  // 文字サイズ調整ロジック
-  if (info.name === "SHOT A") {
-    nameEl.style.fontSize = "20px";
-  } else {
-    // 文字数に応じて45px〜30pxの間で調整
-    let size = 45;
-    if (info.name.length > 3) size = 35;
-    if (info.name.length > 5) size = 28;
-    nameEl.style.fontSize = size + "px";
-  }
+  nameEl.innerText = best.name;
+  distEl.innerText = best.d ? "(" + best.d + ")" : "";
+  nameEl.style.fontSize = (best.name === "SHOT A") ? "20px" : "45px";
 }
 
-function selectHole(d) {
-  totalDist = d; score = 0; lastShotPos = null;
-  document.getElementById('total-val').innerText = totalDist;
-  document.getElementById('remaining').innerText = totalDist;
-  document.getElementById('score-display').innerText = "SCORE: 0";
-  document.getElementById('last-shot-dist').innerText = "LAST SHOT: --- yds";
-  updateClubDisplay(totalDist);
-  toggleHolePanel();
-}
-
-function addScore() {
-  if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
-  score++;
-  document.getElementById('score-display').innerText = "SCORE: " + score;
-  navigator.geolocation.getCurrentPosition(pos => { lastShotPos = pos.coords; }, null, {enableHighAccuracy:true});
-}
-
-function toggleHolePanel() {
-  const p = document.getElementById('hole-panel');
-  p.style.display = (p.style.display === 'flex') ? 'none' : 'flex';
-}
-
-const container = document.getElementById('club-container');
 function renderSettings() {
+  const container = document.getElementById('club-container');
   container.innerHTML = "";
   myClubs.forEach((club, index) => {
-    const row = document.createElement('div');
-    row.className = 'club-row';
+    const row = document.createElement('div'); row.className = 'club-row';
+    let optionsHtml = clubOptions.map(opt => `<option value="${opt}" ${opt === club.name ? 'selected' : ''}>${opt}</option>`).join('');
     row.innerHTML = `<span style="color:#888; font-size:11px;">${index+1}</span>
-      <input type="text" class="club-name-in" value="${club.name}" placeholder="番手" onchange="updateClubData(${index},'name',this.value)">
+      <select class="club-sel-v2" onchange="updateClubData(${index},'name',this.value)">${optionsHtml}</select>
       <input type="number" class="club-dist" value="${club.dist}" onchange="updateClubData(${index},'dist',this.value)">
       <span style="color:#888; font-size:12px;">yds</span>`;
     container.appendChild(row);
   });
 }
 
-function updateClubData(i,k,v){ 
-  if(k==='dist') v = parseInt(v) || 0;
-  myClubs[i][k] = v; 
-  if(totalDist > 0) updateClubDisplay(totalDist);
-}
-
+// 共通関数
+function updateClubData(i,k,v){ if(k==='dist')v=parseInt(v)||0; myClubs[i][k]=v; if(totalDist > 0) updateClubDisplay(totalDist); }
+function toggleSettings(){ const p=document.getElementById('settings-panel'); if(p.style.display !== 'flex') renderSettings(); p.style.display=(p.style.display==='flex')?'none':'flex'; }
+function selectHole(d) { totalDist = d; score = 0; lastShotPos = null; document.getElementById('total-val').innerText = totalDist; document.getElementById('remaining').innerText = totalDist; document.getElementById('score-display').innerText = "SCORE: 0"; updateClubDisplay(totalDist); toggleHolePanel(); }
+function addScore() { if (navigator.vibrate) navigator.vibrate([50, 30, 50]); score++; document.getElementById('score-display').innerText = "SCORE: " + score; navigator.geolocation.getCurrentPosition(pos => { lastShotPos = pos.coords; }, null, {enableHighAccuracy:true}); }
+function toggleHolePanel() { const p = document.getElementById('hole-panel'); p.style.display = (p.style.display === 'flex') ? 'none' : 'flex'; }
 function askTotal(){ const n = prompt("ヤード入力", totalDist); if(n){ totalDist=parseInt(n); document.getElementById('total-val').innerText=totalDist; document.getElementById('remaining').innerText=totalDist; updateClubDisplay(totalDist); } }
-function toggleSettings(){ 
-  const p=document.getElementById('settings-panel'); 
-  if(p.style.display !== 'flex') renderSettings();
-  p.style.display=(p.style.display==='flex')?'none':'flex'; 
-}
-
-function calc(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
+function calc(lat1, lon1, lat2, lon2) { const R = 6371000; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180; const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
 function update(pos) {
   if (!startPos) return;
   const d = calc(startPos.latitude, startPos.longitude, pos.coords.latitude, pos.coords.longitude);
-  const yards = Math.floor(d * 1.09361);
-  const remaining = Math.max(0, totalDist - yards);
-  document.getElementById('drive').innerText = yards.toString().padStart(3, '0');
-  document.getElementById('remaining').innerText = remaining;
-  if (lastShotPos) {
-    const ld = calc(lastShotPos.latitude, lastShotPos.longitude, pos.coords.latitude, pos.coords.longitude);
-    const lyards = Math.floor(ld * 1.09361);
-    document.getElementById('last-shot-dist').innerText = "LAST SHOT: " + lyards + " yds";
-  }
+  const yards = Math.floor(d * 1.09361); const remaining = Math.max(0, totalDist - yards);
+  document.getElementById('drive').innerText = yards.toString().padStart(3, '0'); document.getElementById('remaining').innerText = remaining;
+  if (lastShotPos) { const ld = calc(lastShotPos.latitude, lastShotPos.longitude, pos.coords.latitude, pos.coords.longitude); const lyards = Math.floor(ld * 1.09361); document.getElementById('last-shot-dist').innerText = "LAST SHOT: " + lyards + " yds"; }
   updateClubDisplay(remaining);
 }
-
-function startShot() {
-  if (navigator.vibrate) navigator.vibrate(50);
-  score = 1;
-  document.getElementById('score-display').innerText = "SCORE: 1";
-  document.getElementById('drive').innerText = "000";
-  document.getElementById('shot-btn').classList.add('measuring');
-  if (watchId) navigator.geolocation.clearWatch(watchId);
-  navigator.geolocation.getCurrentPosition(pos => {
-    startPos = pos.coords; lastShotPos = pos.coords;
-    watchId = navigator.geolocation.watchPosition(update, null, {enableHighAccuracy:true});
-  }, null, {enableHighAccuracy:true});
-}
-
-function resetAll() {
-  if (navigator.vibrate) navigator.vibrate([30, 30]);
-  if (watchId) navigator.geolocation.clearWatch(watchId);
-  startPos = null; lastShotPos = null; score = 0;
-  document.getElementById('shot-btn').classList.remove('measuring');
-  document.getElementById('club-name-display').innerText = "SHOT A";
-  document.getElementById('club-name-display').style.fontSize = "20px";
-  document.getElementById('club-dist-val').innerText = "";
-  document.getElementById('drive').innerText = "000";
-  document.getElementById('remaining').innerText = "---";
-  document.getElementById('score-display').innerText = "SCORE: 0";
-  document.getElementById('last-shot-dist').innerText = "LAST SHOT: --- yds";
-}
+function startShot() { if (navigator.vibrate) navigator.vibrate(50); score = 1; document.getElementById('score-display').innerText = "SCORE: 1"; document.getElementById('drive').innerText = "000"; document.getElementById('shot-btn').classList.add('measuring'); if (watchId) navigator.geolocation.clearWatch(watchId); navigator.geolocation.getCurrentPosition(pos => { startPos = pos.coords; lastShotPos = pos.coords; watchId = navigator.geolocation.watchPosition(update, null, {enableHighAccuracy:true}); }, null, {enableHighAccuracy:true}); }
+function resetAll() { if (navigator.vibrate) navigator.vibrate([30, 30]); if (watchId) navigator.geolocation.clearWatch(watchId); startPos = null; lastShotPos = null; score = 0; document.getElementById('shot-btn').classList.remove('measuring'); document.getElementById('club-name-display').innerText = "SHOT A"; document.getElementById('club-dist-val').innerText = ""; document.getElementById('drive').innerText = "000"; document.getElementById('remaining').innerText = "---"; document.getElementById('score-display').innerText = "SCORE: 0"; document.getElementById('last-shot-dist').innerText = "LAST SHOT: --- yds"; }
 
 renderSettings();
 </script>
