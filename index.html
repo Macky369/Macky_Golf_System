@@ -4,15 +4,35 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
-    /* 既存の洗練されたブラックデザインを維持 */
-    * { touch-action: none; user-select: none; -webkit-user-select: none; }
-    input, select, textarea, #total-val, #settings-panel, #hole-panel, #score-panel, .list-container, .club-row { 
-      touch-action: auto !important; 
+    /* 全体の固定は維持しつつ、必要な場所だけスクロールを解放 */
+    * { touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+    
+    /* 入力項目やリストエリアはスクロールと操作を許可 */
+    input, select, textarea, .list-container, .score-row, .club-row { 
+      touch-action: pan-y !important; /* 縦スクロールを許可 */
       user-select: auto !important; 
       -webkit-user-select: auto !important; 
     }
+
     body, html { margin: 0; padding: 0; width: 100%; height: 100%; background-color: #000; color: white; font-family: 'Arial', sans-serif; overflow: hidden; }
+    
     .cockpit { position: relative; width: 100vw; height: 100vh; background: radial-gradient(circle, #1a1a1a 60%, #333 95%, #000 100%); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 15px; padding: 0 10% 40px 10%; box-sizing: border-box; }
+    
+    /* モーダルパネル（スコアカードや設定）の設定 */
+    .modal-panel { 
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+      background: rgba(0,0,0,0.98); display: none; flex-direction: column; align-items: center; z-index: 100; 
+    }
+    
+    /* ここが重要：スクロールを可能にするコンテナ */
+    .list-container { 
+      flex: 1; width: 95%; 
+      overflow-y: scroll !important; /* 縦スクロールを強制 */
+      -webkit-overflow-scrolling: touch; /* iPhone/Androidでの滑らかなスクロール */
+      padding: 10px; box-sizing: border-box;
+    }
+
+    /* 以下、デザイン維持 */
     .label { font-size: 11px; color: #888; letter-spacing: 2px; }
     #remaining { font-size: 80px; font-weight: bold; color: #ff4444; line-height: 1; margin-bottom: -10px; }
     #total-val { font-size: 26px; color: #28a745; border-bottom: 2px dashed #28a745; cursor: pointer; }
@@ -23,14 +43,12 @@
     .side-btn { width: 60px; height: 60px; border-radius: 50%; background: #444; color: #fff; border: none; font-size: 10px; font-weight: bold; }
     .score-btn { background: #007bff; box-shadow: 0 4px #004085; }
     .settings-icon { position: absolute; right: 20px; top: 20px; font-size: 32px; z-index: 10; cursor: pointer; }
-    .modal-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: none; flex-direction: column; align-items: center; z-index: 100; }
-    .panel-header { color: #28a745; margin: 20px 0 5px; font-size: 20px; font-weight: bold; }
-    .list-container { flex: 1; width: 95%; overflow-y: auto !important; padding: 10px; }
-    .close-btn { margin: 10px 0 20px; padding: 12px 30px; background: #28a745; border: none; color: white; border-radius: 25px; font-weight: bold; }
-    .score-row { display: flex; align-items: center; background: #222; margin-bottom: 5px; padding: 10px; border-radius: 8px; justify-content: space-between; }
-    .score-input { width: 50px; background: #000; color: #fff; border: 1px solid #555; text-align: center; padding: 5px; border-radius: 4px; font-size: 18px; }
-    select { background: #333; color: #fff; border: 1px solid #555; padding: 10px; border-radius: 4px; width: 100%; font-size: 16px; margin-bottom: 10px; }
-    .club-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: #222; padding: 5px 10px; border-radius: 8px; }
+    .panel-header { color: #28a745; margin: 20px 0 10px; font-size: 20px; font-weight: bold; }
+    .close-btn { margin: 15px 0 25px; padding: 12px 40px; background: #28a745; border: none; color: white; border-radius: 25px; font-weight: bold; flex-shrink: 0; }
+    .score-row { display: flex; align-items: center; background: #222; margin-bottom: 8px; padding: 15px; border-radius: 8px; justify-content: space-between; flex-shrink: 0; }
+    .score-input { width: 60px; background: #000; color: #fff; border: 1px solid #555; text-align: center; padding: 8px; border-radius: 4px; font-size: 20px; }
+    select { background: #333; color: #fff; border: 1px solid #555; padding: 12px; border-radius: 4px; width: 100%; font-size: 16px; margin-bottom: 15px; }
+    .club-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: #222; padding: 10px; border-radius: 8px; flex-shrink: 0; }
   </style>
 </head>
 <body>
@@ -53,7 +71,7 @@
   <button class="side-btn" onclick="toggleHolePanel()" style="background:#28a745; width: 120px; border-radius: 10px; height: 45px;">HOLE SELECT</button>
   <div id="drive-info" style="text-align:center;">
     <div class="label">DRIVE</div>
-    <div><span id="drive" style="font-size:38px; font-weight:bold;">000</span><span style="font-size:10px; color:#666; margin-left:5px;">v1.1.7</span></div>
+    <div><span id="drive" style="font-size:38px; font-weight:bold;">000</span><span style="font-size:10px; color:#666; margin-left:5px;">v1.1.8</span></div>
     <div id="last-shot-dist" style="font-size:14px; color:#007bff; font-weight:bold;">LAST SHOT: --- yds</div>
   </div>
   <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
@@ -90,6 +108,7 @@
 </div>
 
 <script>
+// (スクリプト部分はv1.1.7の機能を維持)
 let startPos = null, lastShotPos = null, watchId = null, totalDist = 0, score = 0;
 let currentCourseName = localStorage.getItem('lastCourse') || "";
 const courseMaster = {
@@ -140,7 +159,7 @@ function renderSettings() {
     let options = master.map(opt => `<option value="${opt}" ${opt === club.name ? 'selected' : ''}>${opt}</option>`).join('');
     row.innerHTML = `<span style="font-size:11px;">${index+1}</span>
       <select style="width:80px; margin:0;" onchange="updateClub(${index},'name',this.value)">${options}</select>
-      <input type="number" class="club-dist" style="width:60px; background:#000; color:#0f0; border:1px solid #444;" value="${club.dist}" onchange="updateClub(${index},'dist',this.value)"> yds`;
+      <input type="number" class="club-dist" style="width:65px; background:#000; color:#0f0; border:1px solid #444; padding:5px;" value="${club.dist}" onchange="updateClub(${index},'dist',this.value)"> yds`;
     container.appendChild(row);
   });
 }
@@ -161,8 +180,6 @@ function toggleScorePanel(){ if(document.getElementById('score-panel').style.dis
 function toggleHolePanel(){ if(document.getElementById('hole-panel').style.display !== 'flex') renderHoleList(); toggle('hole-panel'); }
 function toggle(id){ const p=document.getElementById(id); p.style.display=(p.style.display==='flex')?'none':'flex'; }
 function askTotal(){ const n = prompt("ヤード入力", totalDist); if(n){ totalDist=parseInt(n); document.getElementById('total-val').innerText=n; document.getElementById('remaining').innerText=n; updateClubDisplay(n); } }
-
-// GPS (簡略化維持)
 function calc(lat1, lon1, lat2, lon2) { const R = 6371000; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180; const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
 function update(pos) {
   if (!startPos) return;
@@ -181,8 +198,6 @@ function updateClubDisplay(d) {
   document.getElementById('club-dist-val').innerText = best.d ? "(" + best.d + ")" : "";
 }
 function resetAll() { if (watchId) navigator.geolocation.clearWatch(watchId); startPos = null; lastShotPos = null; score = 0; document.getElementById('shot-btn').classList.remove('measuring'); document.getElementById('drive').innerText = "000"; document.getElementById('remaining').innerText = "---"; document.getElementById('score-display').innerText = "SCORE: 0 (INPUT)"; }
-
-// 初期化
 if(currentCourseName) changeMasterCourse(currentCourseName);
 </script>
 </body>
