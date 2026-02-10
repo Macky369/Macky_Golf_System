@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
-    /* 全体ガード */
+    /* 既存のスタイルを維持しつつ、追加分を整理 */
     * { touch-action: none; user-select: none; -webkit-user-select: none; }
-    input, select, textarea, #total-val, #settings-panel, #hole-panel, .list-container, .club-row, .hole-item { 
+    input, select, textarea, #total-val, #settings-panel, #hole-panel, #score-panel, .list-container, .club-row, .hole-item { 
       touch-action: auto !important; 
       user-select: auto !important; 
       -webkit-user-select: auto !important; 
@@ -54,25 +54,24 @@
     .list-container { flex: 1; width: 95%; overflow-y: auto !important; padding: 10px; }
     .close-btn { margin: 10px 0 20px; padding: 12px 30px; background: #28a745; border: none; color: white; border-radius: 25px; font-weight: bold; }
 
+    /* スコアカード用スタイル */
+    .score-row { display: flex; align-items: center; background: #222; margin-bottom: 5px; padding: 10px; border-radius: 8px; justify-content: space-between; }
+    .score-input { width: 50px; background: #000; color: #fff; border: 1px solid #555; text-align: center; padding: 5px; border-radius: 4px; font-size: 18px; }
+
     .club-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; background: #222; padding: 5px 10px; border-radius: 8px; gap: 5px; }
-    select.club-sel-v3 { background: #333; color: #fff; border: 1px solid #555; padding: 10px; border-radius: 4px; width: 90px; font-size: 16px; }
-    input.club-dist { background: #000; color: #28a745; border: 1px solid #444; padding: 10px; width: 65px; text-align: center; border-radius: 4px; font-size: 16px; font-weight: bold; }
-    
-    /* リスト編集用 */
-    #list-edit-area { width: 90%; background: #111; padding: 10px; border-radius: 10px; margin-top: 10px; display: none; }
-    textarea { width: 100%; height: 60px; background: #000; color: #ccc; border: 1px solid #444; font-size: 14px; padding: 5px; box-sizing: border-box; }
+    select { background: #333; color: #fff; border: 1px solid #555; padding: 10px; border-radius: 4px; width: 100%; font-size: 16px; margin-bottom: 10px; }
   </style>
 </head>
 <body>
 
 <div class="cockpit">
   <div style="text-align:center">
-    <div class="label">TOTAL YARDS</div>
+    <div class="label" id="current-course-name">SELECT COURSE</div>
     <div id="total-val" onclick="askTotal()">---</div>
   </div>
   
   <div id="remaining">---</div>
-  <div id="score-display" style="color:#007bff; font-weight:bold;">SCORE: 0</div>
+  <div id="score-display" style="color:#007bff; font-weight:bold; cursor:pointer;" onclick="toggleScorePanel()">SCORE: 0 (INPUT)</div>
   
   <div class="btn-row" style="display:flex; gap:15px; align-items:center;">
     <button class="side-btn" onclick="resetAll()">RESET</button>
@@ -87,11 +86,17 @@
   
   <div id="drive-info" style="text-align:center;">
     <div class="label">DRIVE</div>
-    <div><span id="drive" style="font-size:38px; font-weight:bold;">000</span><span style="font-size:10px; color:#666; margin-left:5px;">v1.1.6</span></div>
+    <div><span id="drive" style="font-size:38px; font-weight:bold;">000</span><span style="font-size:10px; color:#666; margin-left:5px;">v1.2.0</span></div>
     <div id="last-shot-dist" style="font-size:14px; color:#007bff; font-weight:bold;">LAST SHOT: --- yds</div>
   </div>
 
   <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
+</div>
+
+<div id="score-panel" class="modal-panel">
+  <div class="panel-header">SCORE CARD</div>
+  <div id="score-card-list" class="list-container"></div>
+  <button class="close-btn" onclick="toggleScorePanel()">SAVE & CLOSE</button>
 </div>
 
 <div id="hole-panel" class="modal-panel">
@@ -101,71 +106,87 @@
 </div>
 
 <div id="settings-panel" class="modal-panel">
-  <div class="panel-header">MY 14 CLUBS</div>
-  <div id="club-container" class="list-container"></div>
-  
-  <button style="color:#28a745; background:none; border:1px dashed #28a745; padding:5px 15px; border-radius:5px; font-size:12px; margin-bottom:10px;" onclick="toggleListEdit()">プルダウン項目を編集</button>
-  
-  <div id="list-edit-area">
-    <div style="font-size:11px; color:#888; margin-bottom:5px;">カンマ(,)区切りで入力してください</div>
-    <textarea id="master-list-input"></textarea>
-    <button style="width:100%; background:#444; color:white; border:none; padding:5px; margin-top:5px;" onclick="saveMasterList()">リスト更新</button>
+  <div class="panel-header">COURSE & CLUBS</div>
+  <div class="list-container">
+    <div class="label">COURSE SELECT</div>
+    <select id="course-master-select" onchange="changeMasterCourse(this.value)">
+      <option value="">-- ゴルフ場を選択 --</option>
+      <option value="沖縄カントリークラブ">沖縄カントリークラブ</option>
+      <option value="パームヒルズゴルフリゾート">パームヒルズゴルフリゾート</option>
+      <option value="那覇ゴルフ倶楽部(ショート)">那覇ゴルフ倶楽部(ショート)</option>
+      <option value="パブリックゴルフうらそえ">パブリックゴルフうらそえ</option>
+      <option value="オーシャンキャッスル">オーシャンキャッスル</option>
+    </select>
+    
+    <div class="label" style="margin-top:20px;">MY 14 CLUBS</div>
+    <div id="club-container"></div>
   </div>
-
   <button class="close-btn" onclick="toggleSettings()">SETTING OK!</button>
 </div>
 
 <script>
 let startPos = null, lastShotPos = null, watchId = null, totalDist = 0, score = 0;
+let currentCourse = null;
 
-// マスターリスト（プルダウンの中身）
+// 沖縄マスターデータ
+const courseMaster = {
+  "沖縄カントリークラブ": { pars: [4,3,4,4,4,3,4,5,4, 4,3,4,4,4,3,4,5,4], dists: [350,150,380,340,360,160,390,480,370, 350,150,380,340,360,160,390,480,370] },
+  "パームヒルズゴルフリゾート": { pars: [4,5,4,3,4,4,3,4,5, 4,5,4,3,4,4,3,4,5], dists: [380,520,400,160,410,390,170,420,530, 380,520,400,160,410,390,170,420,530] },
+  "那覇ゴルフ倶楽部(ショート)": { pars: Array(18).fill(3), dists: [145,163,150,150,138,167,140,145,162,135,170,155,140,150,145,178,160,150] },
+  "パブリックゴルフうらそえ": { pars: [3,3,3,3,4,3,3,3,3], dists: [120,130,115,140,250,110,125,135,145] },
+  "オーシャンキャッスル": { pars: [4,4,5,3,4,4,3,4,5, 4,4,5,3,4,4,3,4,5], dists: [360,370,500,155,380,390,165,400,510, 360,370,500,155,380,390,165,400,510] }
+};
+
 let clubMasterList = ["---", "1W", "3W", "5W", "7W", "3U", "4U", "5U", "7i", "8i", "9i", "PW", "50°", "52°", "56°", "58°", "PT"];
+let myClubs = [{name: "1W", dist: 230}, {name: "5W", dist: 190}, {name: "5U", dist: 170}, {name: "7i", dist: 150}, {name: "8i", dist: 140}, {name: "9i", dist: 130}, {name: "PW", dist: 115}, {name: "52°", dist: 95}, {name: "58°", dist: 75}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}];
 
-let myClubs = [
-  {name: "1W", dist: 230}, {name: "5W", dist: 190}, {name: "5U", dist: 170},
-  {name: "7i", dist: 150}, {name: "8i", dist: 140}, {name: "9i", dist: 130},
-  {name: "PW", dist: 115}, {name: "52°", dist: 95}, {name: "58°", dist: 75},
-  {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}
-];
+function changeMasterCourse(name) {
+  if(!name) return;
+  currentCourse = courseMaster[name];
+  document.getElementById('current-course-name').innerText = name;
+  renderHoleList();
+  renderScoreCard();
+  alert(name + " データを読み込みました");
+}
 
-const zanpaHoles = [{h:1,d:145},{h:2,d:163},{h:3,d:150},{h:4,d:150},{h:5,d:138},{h:6,d:167},{h:7,d:280},{h:8,d:145},{h:9,d:162},{h:10,d:135},{h:11,d:170},{h:12,d:155},{h:13,d:310},{h:14,d:150},{h:15,d:285},{h:16,d:178},{h:17,d:350},{h:18,d:150}];
-
-function renderHoles() {
-  const hl = document.getElementById('hole-list');
-  hl.innerHTML = "";
-  zanpaHoles.forEach(h => {
-    const div = document.createElement('div'); div.className = 'hole-item';
+function renderHoleList() {
+  const hl = document.getElementById('hole-list'); hl.innerHTML = "";
+  if(!currentCourse) return;
+  currentCourse.dists.forEach((d, i) => {
+    const div = document.createElement('div');
+    div.className = 'hole-item';
     div.style = "display:flex; justify-content:space-between; padding:15px; background:#222; margin-bottom:8px; border-radius:8px;";
-    div.innerHTML = `<span>${h.h}H</span><span>${h.d} yd</span>`;
-    div.onclick = () => selectHole(h.d); hl.appendChild(div);
+    div.innerHTML = `<span>${i+1}H (Par ${currentCourse.pars[i]})</span><span>${d} yd</span>`;
+    div.onclick = () => selectHole(d); hl.appendChild(div);
+  });
+}
+
+function renderScoreCard() {
+  const sc = document.getElementById('score-card-list'); sc.innerHTML = "";
+  if(!currentCourse) return;
+  currentCourse.pars.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'score-row';
+    div.innerHTML = `<span>${i+1}H (Par ${p})</span>
+      <div>
+        S:<input type="number" class="score-input" placeholder="打">
+        P:<input type="number" class="score-input" placeholder="パ">
+      </div>`;
+    sc.appendChild(div);
   });
 }
 
 function renderSettings() {
-  const container = document.getElementById('club-container');
-  container.innerHTML = "";
+  const container = document.getElementById('club-container'); container.innerHTML = "";
   myClubs.forEach((club, index) => {
     const row = document.createElement('div'); row.className = 'club-row';
     let optionsHtml = clubMasterList.map(opt => `<option value="${opt}" ${opt === club.name ? 'selected' : ''}>${opt}</option>`).join('');
     row.innerHTML = `<span style="color:#888; font-size:11px;">${index+1}</span>
-      <select class="club-sel-v3" onchange="updateClubData(${index},'name',this.value)">${optionsHtml}</select>
+      <select style="width:80px; margin:0;" onchange="updateClubData(${index},'name',this.value)">${optionsHtml}</select>
       <input type="number" class="club-dist" value="${club.dist}" onchange="updateClubData(${index},'dist',this.value)">
       <span style="color:#888; font-size:12px;">yds</span>`;
     container.appendChild(row);
   });
-  document.getElementById('master-list-input').value = clubMasterList.join(',');
-}
-
-function toggleListEdit() {
-  const area = document.getElementById('list-edit-area');
-  area.style.display = (area.style.display === 'block') ? 'none' : 'block';
-}
-
-function saveMasterList() {
-  const input = document.getElementById('master-list-input').value;
-  clubMasterList = input.split(',').map(s => s.trim());
-  renderSettings();
-  alert("プルダウン項目を更新しました！");
 }
 
 function updateClubData(i,k,v){ if(k==='dist')v=parseInt(v)||0; myClubs[i][k]=v; if(totalDist > 0) updateClubDisplay(totalDist); }
@@ -180,10 +201,13 @@ function updateClubDisplay(dist) {
   nameEl.style.fontSize = (best.name === "SHOT A") ? "20px" : "45px";
 }
 
-function selectHole(d) { totalDist = d; score = 0; document.getElementById('total-val').innerText = totalDist; document.getElementById('remaining').innerText = totalDist; document.getElementById('score-display').innerText = "SCORE: 0"; updateClubDisplay(totalDist); toggleHolePanel(); }
+function selectHole(d) { totalDist = d; score = 0; document.getElementById('total-val').innerText = totalDist; document.getElementById('remaining').innerText = totalDist; document.getElementById('score-display').innerText = "SCORE: 0 (INPUT)"; updateClubDisplay(totalDist); toggleHolePanel(); }
 function toggleSettings(){ const p=document.getElementById('settings-panel'); if(p.style.display !== 'flex') renderSettings(); p.style.display=(p.style.display==='flex')?'none':'flex'; }
-function toggleHolePanel() { const p = document.getElementById('hole-panel'); p.style.display = (p.style.display === 'flex') ? 'none' : 'flex'; }
+function toggleHolePanel() { const p = document.getElementById('hole-panel'); if(p.style.display !== 'flex') renderHoleList(); p.style.display = (p.style.display === 'flex') ? 'none' : 'flex'; }
+function toggleScorePanel() { const p = document.getElementById('score-panel'); if(p.style.display !== 'flex') renderScoreCard(); p.style.display = (p.style.display === 'flex') ? 'none' : 'flex'; }
 function askTotal(){ const n = prompt("ヤード入力", totalDist); if(n){ totalDist=parseInt(n); document.getElementById('total-val').innerText=totalDist; document.getElementById('remaining').innerText=totalDist; updateClubDisplay(totalDist); } }
+
+// GPS計算・更新ロジック
 function calc(lat1, lon1, lat2, lon2) { const R = 6371000; const dLat = (lat2 - lat1) * Math.PI / 180; const dLon = (lon2 - lon1) * Math.PI / 180; const a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon/2) * Math.sin(dLon/2); return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); }
 function update(pos) {
   if (!startPos) return;
@@ -193,12 +217,9 @@ function update(pos) {
   if (lastShotPos) { const ld = calc(lastShotPos.latitude, lastShotPos.longitude, pos.coords.latitude, pos.coords.longitude); const lyards = Math.floor(ld * 1.09361); document.getElementById('last-shot-dist').innerText = "LAST SHOT: " + lyards + " yds"; }
   updateClubDisplay(remaining);
 }
-function startShot() { score = 1; document.getElementById('score-display').innerText = "SCORE: 1"; document.getElementById('shot-btn').classList.add('measuring'); navigator.geolocation.getCurrentPosition(pos => { startPos = pos.coords; lastShotPos = pos.coords; watchId = navigator.geolocation.watchPosition(update, null, {enableHighAccuracy:true}); }, null, {enableHighAccuracy:true}); }
-function addScore() { score++; document.getElementById('score-display').innerText = "SCORE: " + score; navigator.geolocation.getCurrentPosition(pos => { lastShotPos = pos.coords; }, null, {enableHighAccuracy:true}); }
-function resetAll() { if (watchId) navigator.geolocation.clearWatch(watchId); startPos = null; lastShotPos = null; score = 0; document.getElementById('shot-btn').classList.remove('measuring'); document.getElementById('club-name-display').innerText = "SHOT A"; document.getElementById('club-dist-val').innerText = ""; document.getElementById('drive').innerText = "000"; document.getElementById('remaining').innerText = "---"; document.getElementById('score-display').innerText = "SCORE: 0"; document.getElementById('last-shot-dist').innerText = "LAST SHOT: --- yds"; }
-
-renderHoles();
-renderSettings();
+function startShot() { score = 1; document.getElementById('score-display').innerText = "SCORE: 1 (INPUT)"; document.getElementById('shot-btn').classList.add('measuring'); navigator.geolocation.getCurrentPosition(pos => { startPos = pos.coords; lastShotPos = pos.coords; watchId = navigator.geolocation.watchPosition(update, null, {enableHighAccuracy:true}); }, null, {enableHighAccuracy:true}); }
+function addScore() { score++; document.getElementById('score-display').innerText = "SCORE: " + score + " (INPUT)"; navigator.geolocation.getCurrentPosition(pos => { lastShotPos = pos.coords; }, null, {enableHighAccuracy:true}); }
+function resetAll() { if (watchId) navigator.geolocation.clearWatch(watchId); startPos = null; lastShotPos = null; score = 0; document.getElementById('shot-btn').classList.remove('measuring'); document.getElementById('club-name-display').innerText = "SHOT A"; document.getElementById('club-dist-val').innerText = ""; document.getElementById('drive').innerText = "000"; document.getElementById('remaining').innerText = "---"; document.getElementById('score-display').innerText = "SCORE: 0 (INPUT)"; document.getElementById('last-shot-dist').innerText = "LAST SHOT: --- yds"; }
 </script>
 </body>
 </html>
