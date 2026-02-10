@@ -9,9 +9,9 @@
     .modal-panel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.98); display: none; flex-direction: column; align-items: center; z-index: 100; overflow: hidden; }
     .list-container { width: 100%; flex: 1; overflow-y: auto !important; -webkit-overflow-scrolling: touch; padding: 10px 20px; box-sizing: border-box; touch-action: pan-y !important; }
     
+    /* UIパーツ */
     #club-name-display { font-size: 22px; font-weight: 900; line-height: 1.1; text-align: center; width: 90%; color: #fff; }
     #club-dist-val { font-size: 14px; font-weight: bold; color: #0f0; margin-top: 2px; }
-    
     #remaining { font-size: 80px; font-weight: bold; color: #ff4444; line-height: 1; }
     #total-val { font-size: 26px; color: #28a745; border-bottom: 2px dashed #28a745; cursor: pointer; }
     #shot-btn { width: 150px; height: 150px; border-radius: 50%; background: #28a745; color: white; border: none; display: flex; flex-direction: column; align-items: center; justify-content: center; box-shadow: 0 6px #155724; }
@@ -51,7 +51,7 @@
     <div class="label" style="font-size:11px; color:#888;">DRIVE</div>
     <div id="drive" style="font-size:38px; font-weight:bold;">000</div>
     <div id="last-shot-dist" style="font-size:14px; color:#007bff; font-weight:bold;">LAST SHOT: --- yds</div>
-    <div style="font-size:10px; color:#444; margin-top:5px;">v1.2.4</div>
+    <div style="font-size:10px; color:#444; margin-top:5px;">v1.2.5</div>
   </div>
   <div class="settings-icon" onclick="toggleSettings()">⚙️</div>
 </div>
@@ -77,8 +77,12 @@
     <div class="label">COURSE SELECT</div>
     <select id="course-master-select" onchange="changeMasterCourse(this.value)">
       <option value="">-- ゴルフ場を選択 --</option>
-      <option value="残波ゴルフクラブ">残波ゴルフクラブ</option>
+      <option value="残波ゴルフクラブ">【メイン】残波ゴルフクラブ</option>
       <option value="沖縄カントリークラブ">沖縄カントリークラブ</option>
+      <option value="パームヒルズゴルフリゾート">パームヒルズゴルフリゾート</option>
+      <option value="那覇ゴルフ倶楽部(ショート)">那覇ゴルフ倶楽部(ショート)</option>
+      <option value="パブリックゴルフうらそえ">パブリックゴルフうらそえ</option>
+      <option value="オーシャンキャッスル">オーシャンキャッスル</option>
     </select>
     <div class="label" style="margin-top:10px;">MY 14 CLUBS</div>
     <div id="club-container"></div>
@@ -90,12 +94,14 @@
 let startPos = null, lastShotPos = null, watchId = null, totalDist = 0, score = 0;
 let currentCourseName = localStorage.getItem('lastCourse') || "";
 
+// コースデータ復刻
 const courseMaster = {
-  "残波ゴルフクラブ": { 
-    pars: [3,3,3,4,3,3,3,3,4, 3,3,3,3,4,3,3,3,4],
-    dists: [142,122,123,260,113,105,123,123,250, 110,132,130,128,245,115,120,135,260] 
-  },
-  "沖縄カントリークラブ": { pars: [4,3,4,4,4,3,4,5,4, 4,3,4,4,4,3,4,5,4], dists: [350,150,380,340,360,160,390,480,370, 350,150,380,340,360,160,390,480,370] }
+  "残波ゴルフクラブ": { pars: [3,3,3,4,3,3,3,3,4, 3,3,3,3,4,3,3,3,4], dists: [142,122,123,260,113,105,123,123,250, 110,132,130,128,245,115,120,135,260] },
+  "沖縄カントリークラブ": { pars: [4,3,4,4,4,3,4,5,4, 4,3,4,4,4,3,4,5,4], dists: [350,150,380,340,360,160,390,480,370, 350,150,380,340,360,160,390,480,370] },
+  "パームヒルズゴルフリゾート": { pars: [4,5,4,3,4,4,3,4,5, 4,5,4,3,4,4,3,4,5], dists: [380,520,400,160,410,390,170,420,530, 380,520,400,160,410,390,170,420,530] },
+  "那覇ゴルフ倶楽部(ショート)": { pars: Array(18).fill(3), dists: [145,163,150,150,138,167,140,145,162,135,170,155,140,150,145,178,160,150] },
+  "パブリックゴルフうらそえ": { pars: [3,3,3,3,4,3,3,3,3], dists: [120,130,115,140,250,110,125,135,145] },
+  "オーシャンキャッスル": { pars: [4,4,5,3,4,4,3,4,5, 4,4,5,3,4,4,3,4,5], dists: [360,370,500,155,380,390,165,400,510, 360,370,500,155,380,390,165,400,510] }
 };
 
 let myClubs = JSON.parse(localStorage.getItem('myClubs')) || [
@@ -105,14 +111,25 @@ let myClubs = JSON.parse(localStorage.getItem('myClubs')) || [
   {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}, {name: "---", dist: 0}
 ];
 
-// --- クラブ推奨ロジック ---
+// GAS連携
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzmrNlVRPBok4M5nI0vUgEOZdb8wOpPxHNNiyK1prZA0UIgu_6NAigwzy8nxnZopnkn_w/exec";
+
+async function sendToGas() {
+  const sIns = document.querySelectorAll('.s-in'), pIns = document.querySelectorAll('.p-in');
+  let scoreData = []; sIns.forEach((el, i) => scoreData.push({s: el.value, p: pIns[i].value}));
+  try {
+    await fetch(GAS_URL, { method: "POST", mode: 'no-cors', body: JSON.stringify({course: currentCourseName, scores: scoreData}) });
+    alert("スプレッドシートへ送信しました！");
+  } catch (e) { alert("送信エラー: " + e); }
+}
+
+// 共通ロジック
 function getRecClub(dist) {
   let best = "---";
   [...myClubs].reverse().forEach(c => { if (c.name !== "---" && c.dist > 0 && dist <= c.dist) best = c.name; });
   return best;
 }
 
-// --- GPS計算ロジック (復旧) ---
 function calc(lat1, lon1, lat2, lon2) {
   const R = 6371000;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -128,7 +145,6 @@ function updateGPS(pos) {
   const rem = Math.max(0, totalDist - yards);
   document.getElementById('drive').innerText = yards.toString().padStart(3, '0');
   document.getElementById('remaining').innerText = rem;
-  
   if (lastShotPos) {
     const ld = calc(lastShotPos.latitude, lastShotPos.longitude, pos.coords.latitude, pos.coords.longitude);
     document.getElementById('last-shot-dist').innerText = "LAST SHOT: " + Math.floor(ld * 1.09361) + " yds";
@@ -136,7 +152,6 @@ function updateGPS(pos) {
   updateClubDisplay(rem);
 }
 
-// --- メイン操作 ---
 function startShot() {
   score = 1; document.getElementById('score-display').innerText = "SCORE: 1 (INPUT)";
   document.getElementById('shot-btn').classList.add('measuring');
@@ -160,7 +175,6 @@ function updateClubDisplay(d) {
   document.getElementById('club-dist-val').innerText = best.d ? "(" + best.d + ")" : "";
 }
 
-// --- パネル描画 ---
 function renderHoleList() {
   const hl = document.getElementById('hole-list'); hl.innerHTML = "";
   if(!courseMaster[currentCourseName]) return;
@@ -192,7 +206,6 @@ function renderScoreCard() {
   });
 }
 
-// --- ユーティリティ ---
 function changeMasterCourse(name) { if(!name) return; currentCourseName = name; localStorage.setItem('lastCourse', name); document.getElementById('current-course-name').innerText = name; document.getElementById('course-master-select').value = name; }
 function selectHole(d) { totalDist = d; document.getElementById('total-val').innerText = d; document.getElementById('remaining').innerText = d; updateClubDisplay(d); toggleHolePanel(); }
 function toggleScorePanel(){ if(document.getElementById('score-panel').style.display !== 'flex') renderScoreCard(); toggle('score-panel'); }
@@ -207,17 +220,6 @@ function saveScores() {
 }
 function resetAll() { if (watchId) navigator.geolocation.clearWatch(watchId); startPos = null; lastShotPos = null; score = 0; document.getElementById('shot-btn').classList.remove('measuring'); document.getElementById('drive').innerText = "000"; document.getElementById('remaining').innerText = "---"; document.getElementById('score-display').innerText = "SCORE: 0 (INPUT)"; }
 function askTotal(){ const n = prompt("ヤード入力", totalDist); if(n){ totalDist=parseInt(n); document.getElementById('total-val').innerText=n; document.getElementById('remaining').innerText=n; updateClubDisplay(n); } }
-
-// GAS送信 (URLは後で差し替え)
-const GAS_URL = "ここにURL";
-async function sendToGas() {
-  const sIns = document.querySelectorAll('.s-in'), pIns = document.querySelectorAll('.p-in');
-  let scoreData = []; sIns.forEach((el, i) => scoreData.push({s: el.value, p: pIns[i].value}));
-  try {
-    await fetch(GAS_URL, { method: "POST", mode: 'no-cors', body: JSON.stringify({course: currentCourseName, scores: scoreData}) });
-    alert("送信しました！");
-  } catch (e) { alert("エラー: " + e); }
-}
 
 if(currentCourseName) changeMasterCourse(currentCourseName);
 </script>
