@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg-color: #0a0a0c;
+      --accent-blue: #00d4ff;
+      --card-bg: #16161a;
+      --text-color: #e0e0e0;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ヘッダー：右端に⚙️を完全固定 */
+    header {
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #333;
+    }
+
+    h1 { margin: 0; font-size: 1.2rem; letter-spacing: 2px; color: var(--accent-blue); }
+
+    .settings-icon {
+      font-size: 1.5rem;
+      cursor: pointer;
+      transition: transform 0.3s;
+    }
+    .settings-icon:hover { transform: rotate(90deg); }
+
+    /* メインメニュー：タイル型 */
+    .menu-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      padding: 20px;
+      flex-grow: 1;
+    }
+
+    .menu-item {
+      background: var(--card-bg);
+      border: 1px solid #333;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.3s;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+
+    .menu-item:active {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 15px var(--accent-blue);
+    }
+
+    .icon { font-size: 2rem; margin-bottom: 10px; }
+    .label { font-size: 0.9rem; font-weight: bold; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>TERMINAL_X</h1>
+  <div class="settings-icon" onclick="openSettings()">⚙️</div>
+</header>
+
+<div class="menu-grid">
+  <a href="#" class="menu-item">
+    <span class="icon">🏌️‍♂️</span>
+    <span class="label">GOLF_LOG</span>
+  </a>
+  <a href="#" class="menu-item">
+    <span class="icon">🀄</span>
+    <span class="label">MAHJONG_OPS</span>
+  </a>
+  <a href="#" class="menu-item">
+    <span class="icon">📝</span>
+    <span class="label">NEXT_996...</span>
+  </a>
+  <a href="#" class="menu-item" style="border-style: dashed; opacity: 0.5;">
+    <span class="icon">＋</span>
+    <span class="label">ADD_NEW</span>
+  </a>
+</div>
+
+<script>
+  function openSettings() {
+    console.log("Settings Opened");
+    // ここに設定画面への遷移ロジック
+  }
+</script>
+</body>
+</html>
